@@ -67,7 +67,7 @@ try {
         $archive = [System.IO.Compression.ZipArchive]::new($stream, [System.IO.Compression.ZipArchiveMode]::Create)
         try {
             foreach ($file in ($files | Sort-Object)) {
-                $entryName = $file.Replace('\', '/')
+                $entryName = 'Devitools/' + $file.Replace('\', '/')
                 [void][System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile(
                     $archive, (Join-Path $root $file), $entryName, [System.IO.Compression.CompressionLevel]::Optimal)
             }

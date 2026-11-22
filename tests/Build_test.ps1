@@ -9,11 +9,12 @@ try {
     $hash = [System.Security.Cryptography.SHA256]::Create()
     try {
         foreach ($entry in $zip.Entries) {
-            if ($entry.FullName -match '(^|/)(Devitools|tests|Tools|\.git|build)/') {
+            if (-not $entry.FullName.StartsWith('Devitools/') -or $entry.FullName -match '^Devitools/(Devitools|tests|Tools|\.git|build)/') {
                 throw "Unexpected archive entry: $($entry.FullName)"
             }
-            $names[$entry.FullName] = $true
-            $relative = $entry.FullName.Replace('/', '\')
+            $relativeName = $entry.FullName.Substring('Devitools/'.Length)
+            $names[$relativeName] = $true
+            $relative = $relativeName.Replace('/', '\')
             $source = [System.IO.File]::OpenRead((Join-Path $root $relative))
             $packed = $entry.Open()
             try {

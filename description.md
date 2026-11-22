@@ -9,7 +9,9 @@ Keep an eye on your buffs with a movable reminder window. Devitools reminds you 
 - Choose which buffs you want to track and how far in advance you want to be warned. The default warning time is five minutes.
 - Optionally track **Well Fed** and the **Well-Rested** buff from the Cozy Sleeping Bag; both are off by default.
 - Enable situational reminders, such as Detect Invisibility and Unending Breath, separately. These default off.
-- Move or lock the reminder window to fit your UI. It hides during combat and when there are no reminders to show.
+- Track temporary weapon coatings, including sharpening stones, weightstones, and oils, as well as class-specific poisons, shaman imbues, and warlock Firestones or Spellstones. These reminders are optional and off by default.
+- Add an active buff, such as an elixir, to your manually tracked buffs. You can toggle or remove each one in settings, and your list is saved separately for each character.
+- Right-drag the reminder window to move it, or lock it in place. Click its cogwheel to open Buff Reminder settings directly. The window hides during combat and when there are no reminders to show.
 
 The current list covers common buffs for druids, mages, paladins, priests, shamans, warlocks, and warriors. It is a starting point rather than a complete list of every class buff.
 
@@ -21,6 +23,7 @@ Looking for an innkeeper or a trainer? Click the movable **Where is...** button 
 - Place a map pin and see a walking route on your minimap and world map when one is available. No separate navigation addon is required.
 - If none are known in your current zone, Devitools reports the nearest known match on your continent and pins it.
 - Clear the pin manually, or let Devitools clear it when you arrive near the recorded destination.
+- Customize which services and map routes appear, the arrival distance, chat messages, and search options. Right-drag the button to move it, or lock it in place.
 
 NPC locations and walking maps are not complete and may become outdated, so a result or route may sometimes be missing or inaccurate.
 
