@@ -182,6 +182,10 @@ local function update()
         end
     end
 
+    if ns.WeaponEnchants then
+        ns.WeaponEnchants.AppendReminders(db, db.refresh, reminders)
+    end
+
     if #reminders == 0 then frame:Hide(); return end
     for i, text in ipairs(reminders) do
         if not frame.rows[i] then
@@ -210,7 +214,7 @@ end)
 
 local refreshSettings
 local events = CreateFrame("Frame")
-for _, event in ipairs({ "ADDON_LOADED", "PLAYER_ENTERING_WORLD", "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED", "PLAYER_ALIVE", "PLAYER_DEAD", "SPELLS_CHANGED", "UNIT_AURA" }) do
+for _, event in ipairs({ "ADDON_LOADED", "PLAYER_ENTERING_WORLD", "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED", "PLAYER_ALIVE", "PLAYER_DEAD", "SPELLS_CHANGED", "UNIT_AURA", "PLAYER_EQUIPMENT_CHANGED" }) do
     events:RegisterEvent(event)
 end
 events:SetScript("OnEvent", function(_, event, arg)
@@ -421,6 +425,38 @@ if #utilityIDs > 0 then
             function(v) setBuffEnabled(spellID, v) end)
     end
     bottom = bottom - 45 - math.ceil(#utilityIDs / 2) * 30
+end
+local weaponHeading = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+weaponHeading:SetPoint("TOPLEFT", 20, bottom - 15)
+weaponHeading:SetText("Temporary weapon coatings (off by default)")
+local weaponHint = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+weaponHint:SetPoint("TOPLEFT", weaponHeading, "BOTTOMLEFT", 0, -6)
+weaponHint:SetText("Tracks sharpening stones, weightstones, oils, and other temporary coatings.")
+checkbox("Main hand", 20, bottom - 60, function() return db.weaponMainHand end,
+    function(v) db.weaponMainHand = v end)
+checkbox("Off hand", 300, bottom - 60, function() return db.weaponOffHand end,
+    function(v) db.weaponOffHand = v end)
+bottom = bottom - 90
+local classImbues = {
+    ROGUE = { title = "Rogue poisons", hint = "Any poison on the selected weapon satisfies its reminder.", offHand = true },
+    WARLOCK = { title = "Firestone / Spellstone", hint = "Either stone imbue satisfies the main-hand reminder." },
+    SHAMAN = { title = "Shaman weapon imbues", hint = "Any weapon imbue satisfies the selected hand's reminder.", offHand = true },
+}
+local classImbue = classImbues[playerClass]
+if classImbue then
+    local imbueHeading = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    imbueHeading:SetPoint("TOPLEFT", 20, bottom - 15)
+    imbueHeading:SetText(classImbue.title .. " (off by default)")
+    local imbueHint = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    imbueHint:SetPoint("TOPLEFT", imbueHeading, "BOTTOMLEFT", 0, -6)
+    imbueHint:SetText(classImbue.hint)
+    checkbox("Main hand", 20, bottom - 60, function() return db.weaponImbueMainHand end,
+        function(v) db.weaponImbueMainHand = v end)
+    if classImbue.offHand then
+        checkbox("Off hand", 300, bottom - 60, function() return db.weaponImbueOffHand end,
+            function(v) db.weaponImbueOffHand = v end)
+    end
+    bottom = bottom - 90
 end
 panel:SetHeight(math.max(500, -bottom + 35))
 if count == 0 and playerClass ~= "WARLOCK" and playerClass ~= "MAGE" then

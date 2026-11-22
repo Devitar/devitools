@@ -27,6 +27,8 @@ declare WaypointLocationPinMixin: any
 declare Minimap: any
 declare WorldMapFrame: any
 declare OpenMapAPI: any
+declare C_Item: any
+declare GetInventoryItemID: any
 declare IsIndoors: any
 declare GetCVar: any
 declare GetPlayerFacing: any

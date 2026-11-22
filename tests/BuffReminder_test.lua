@@ -43,11 +43,24 @@ for _, frame in ipairs(frames) do
         frame.OnShow(frame)
     end
 end
-local byLabel = {}
-for _, frame in ipairs(frames) do if rawget(frame, "label") then byLabel[frame.label] = frame end end
+local byLabel, mainHands = {}, {}
+for _, frame in ipairs(frames) do
+    if rawget(frame, "label") then
+        byLabel[frame.label] = frame
+        if frame.label == "Main hand" then mainHands[#mainHands + 1] = frame end
+    end
+end
 assert(byLabel["Detect Invisibility"].checked == true, "an explicitly enabled utility buff must remain enabled")
 assert(byLabel["Unending Breath"].checked == false, "an unset utility buff must default off")
 assert(byLabel["Demon Armor"].checked == true, "regular buffs must continue to default on")
+assert(not rawget(mainHands[1], "checked") and not rawget(byLabel["Off hand"], "checked"), "weapon coating reminders must default off")
+mainHands[1].checked = true
+mainHands[1].OnClick(mainHands[1])
+assert(DevitoolsDB.weaponMainHand == true and not DevitoolsDB.weaponOffHand, "weapon hand preferences must be independent")
+assert(#mainHands == 2 and not rawget(mainHands[2], "checked"), "warlock stone reminder must default off separately")
+mainHands[2].checked = true
+mainHands[2].OnClick(mainHands[2])
+assert(DevitoolsDB.weaponImbueMainHand == true, "warlock stone reminder must save its own setting")
 DevitoolsDB.buffs[132] = nil
 for _, frame in ipairs(frames) do
     if frame.kind == "Frame" and rawget(frame, "parent") and frame.parent.kind == "ScrollFrame" and rawget(frame, "OnShow") then

@@ -251,6 +251,7 @@ button:SetScript("OnLeave", function()
     GameTooltip:Hide()
 end)
 
+local refreshToggle
 local events = CreateFrame("Frame")
 events:RegisterEvent("ADDON_LOADED")
 events:SetScript("OnEvent", function(self, _, loaded)
@@ -264,12 +265,18 @@ events:SetScript("OnEvent", function(self, _, loaded)
     if type(DevitoolsDB) ~= "table" then
         DevitoolsDB = {}
     end
+    if DevitoolsDB.whereIsEnabled == nil then
+        DevitoolsDB.whereIsEnabled = true
+    end
     if isEnabled() then
         button:Show()
     else
         button:Hide()
     end
     updateClearButton()
+    if refreshToggle then
+        refreshToggle()
+    end
     local position = DevitoolsCharacterDB.whereIsPosition
     if type(position) == "table" and type(position[1]) == "string" and type(position[2]) == "string"
         and type(position[3]) == "number" and type(position[4]) == "number" then
@@ -284,6 +291,9 @@ local function setEnabled(enabled)
         DevitoolsDB = {}
     end
     DevitoolsDB.whereIsEnabled = enabled
+    if refreshToggle then
+        refreshToggle()
+    end
     if enabled then
         button:Show()
         updateClearButton()
@@ -313,9 +323,10 @@ if ns.Settings then
     toggle:SetScript("OnClick", function(self)
         setEnabled(self:GetChecked() and true or false)
     end)
-    panel:SetScript("OnShow", function()
+    refreshToggle = function()
         toggle:SetChecked(isEnabled())
-    end)
+    end
+    panel:SetScript("OnShow", refreshToggle)
 end
 
 ns.WhereIs = { FindNearest = findNearest, IsEnabled = isEnabled, SetEnabled = setEnabled }

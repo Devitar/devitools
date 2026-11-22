@@ -5,6 +5,12 @@ globals:
     any: true
   OpenMapAPI:
     any: true
+  C_Item.GetWeaponEnchantInfo:
+    any: true
+  C_Item.GetItemInfoInstant:
+    any: true
+  GetInventoryItemID:
+    any: true
   CreateFrame:
     any: true
   UIParent:

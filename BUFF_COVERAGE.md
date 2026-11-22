@@ -22,14 +22,16 @@ Last reviewed: 2026-11-21. This is a working inventory, not a claim that every p
 | Paladin | Auras, seals, Righteous Fury | [ ] Candidates: identify current Forever IDs, exclusive groups, stance representation, and whether short seals belong in this tool. |
 | Priest | Fortitude/Prayer (1243, 21562); Spirit/Prayer (14752, 27681); Shadow Protection/Prayer (976, 27683); Inner Fire (588) | [x] Included. Verify ranks, group-version aura names, and spell availability. |
 | Priest | Shadowform (15473) | [x] Included. Client spell ID is [documented here](https://github.com/gunba/wow-forever-sim/blob/forever/docs/weekly_review.md); verify player aura and whether reminders are wanted while intentionally out of form. |
-| Rogue | Poisons and stealth | [ ] Candidates: poisons are weapon enchants, not ordinary player auras; stealth is situational. Neither is implemented. |
+| Rogue | Poisons and stealth | [x] Optional per-hand poison reminders use the weapon imbue category; verify the category and expiration in game. Stealth remains untracked because it is situational. |
 | Shaman | Lightning Shield (324) | [x] Included. The [client-data review](https://github.com/gunba/wow-forever-sim/blob/forever/docs/weekly_review.md) lists ranks 324, 325, 905, 945, 8134, 10431, 10432; verify learned-rank detection. |
-| Shaman | Other shields and weapon imbues | [ ] Candidates: verify Forever availability, mutual exclusion and IDs; weapon imbues require enchant checks. |
+| Shaman | Other shields and weapon imbues | [x] Optional per-hand weapon imbue reminders use the weapon imbue category; verify in game. Other shields remain candidates. |
 | Warlock | Demon Skin/Armor (687, 706); Detect Invisibility (132); Unending Breath (5697) | [x] Included. Demon Armor ranks 706, 1086, 11733, 11734, 11735 share a name; verify aura identity and other spell ranks. |
 | Warlock | Soul Link (cast 19028; player aura 25228) | [x] Included. Verify aura and pet-dependent behavior in game. [Reported historical spell/aura distinction](https://www.getmangos.eu/forums/topic/1270-playerbot-archive/page/51/) is not Forever runtime proof. |
+| Warlock | Firestone / Spellstone | [x] Optional main-hand imbue reminder. Blizzard says both stones apply weapon imbues alongside oils; verify the reported enchant type and expiration in game. |
 | Warrior | Battle Shout (6673) | [x] Included. Verify ranks and whether a five-minute warning is appropriate for a short-duration shout. |
 | Warrior | Stances and other shouts | [ ] Candidates: inspect Forever's spellbook, stance API, exclusivity, and desired short-buff behavior. |
 | All | Well Fed (19705 and other same-named auras) | [x] Included, enabled by default. Verify different food effects and localization; food effects with different names may be missed. |
+| All | Sharpening stones, weightstones and oils | [x] Optional per-hand temporary coating reminders, independent of class imbues; verify in game. |
 
 ## Known implementation gaps
 
