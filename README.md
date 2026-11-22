@@ -35,7 +35,7 @@ To create a CurseForge-ready archive on Windows, run from the project root:
 powershell -NoProfile -ExecutionPolicy Bypass -File .\Tools\Build.ps1
 ```
 
-The script writes `build/Devitools-<version>.zip`, using the version from `Devitools.toc`. It includes files referenced by the TOC and its XML, along with the applicable license and attribution notices. Use `-OutputPath <path>` to choose a different archive location. Publish the matching source for each release as required by the included licenses.
+The script writes `build/Devitools-<version>.zip`, using the version from `Devitools.toc`. The ZIP contains the addon files at its root; for manual installation, extract them into a folder named `Devitools` inside `Interface/AddOns`. It includes files referenced by the TOC and its XML, along with the applicable license and attribution notices. Use `-OutputPath <path>` to choose a different archive location. Publish the matching source for each release as required by the included licenses.
 
 The addon loads `Devitools.lua` (core), `Data/SpellData.lua` (spell IDs and families), `Modules/BuffReminder.lua` (the reminder tool and its settings), `Data/ServiceNPCs.lua` (locator data), and `Modules/WhereIs.lua` (the locator tool) in the order listed in the TOC. WoW passes a shared addon namespace to each file.
 
