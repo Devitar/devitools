@@ -39,6 +39,8 @@ globals:
     property: read-only
   Settings.RegisterCanvasLayoutCategory:
     any: true
+  Settings.RegisterCanvasLayoutSubcategory:
+    any: true
   Settings.RegisterAddOnCategory:
     any: true
   Settings.OpenToCategory:

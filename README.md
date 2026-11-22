@@ -6,13 +6,13 @@ Devitools is a suite of quality-of-life tools for World of Warcraft: Forever (in
 
 Copy the `Devitools` folder into the Forever client's `Interface/AddOns` directory, restart the game or reload the UI, and enable Devitools in the addon list.
 
-Type `/dvt` or open **Game Menu > Options > AddOns > Devitools** to access settings.
+Type `/dvt` or open **Game Menu > Options > AddOns > Devitools** to access settings. Expand Devitools in the sidebar to find each tool's settings page and enable switch. Disabling Where is hides its buttons and route; an existing map pin is kept.
 
 ## Buff Reminder
 
 Buff Reminder shows a movable list of supported self buffs that are missing or have five minutes or less remaining by default. It also tracks Well Fed and the Cozy Sleeping Bag's Well-Rested buff; both reminders are enabled by default. Only class spells your character knows are suggested. The list hides when everything is covered, while dead, and during combat; it updates again after combat.
 
-In settings, you can toggle each supported class spell, Well Fed, and Well-Rested, enable or disable Buff Reminder, set the expiration warning time, lock the reminder window, or reset its position. Drag the reminder window to move it while unlocked. Settings are shared across your characters; spell switches are saved separately for each spell. Demon Skin is an exception: its choice is saved per character and turns off when that warlock first learns Demon Armor; you can turn it back on manually.
+In settings, you can toggle each supported class spell, Well Fed, and Well-Rested, enable or disable Buff Reminder, set the expiration warning time, lock the reminder window, or reset its position. Situational utility buffs such as Detect Invisibility and Unending Breath appear separately and default off; previously saved choices are kept. Drag the reminder window to move it while unlocked. Settings are shared across your characters; spell switches are saved separately for each spell. Demon Skin is an exception: its choice is saved per character and turns off when that warlock first learns Demon Armor; you can turn it back on manually.
 
 Related alternatives, such as mage armors and paladin blessings, share a reminder: any listed active alternative satisfies the group, and the reminder appears if at least one learned alternative is enabled. This avoids asking for mutually exclusive buffs at the same time.
 

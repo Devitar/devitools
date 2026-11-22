@@ -7,6 +7,7 @@
 
 Devitools.lua
 Data\SpellData.lua
+Modules\Settings.lua
 Modules\BuffReminder.lua
 
 Data\ServiceNPCs.lua

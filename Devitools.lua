@@ -11,7 +11,7 @@ end)
 
 SLASH_DEVITOOLS1 = "/dvt"
 SlashCmdList.DEVITOOLS = function()
-    if ns.BuffReminder then
-        ns.BuffReminder.OpenSettings()
+    if ns.Settings then
+        ns.Settings.Open()
     end
 end

@@ -139,6 +139,15 @@ assert(routeStarts == 3, "a saved matching waypoint should resume tracking after
 waypoint = { map = 1, x = 0.4, y = 0.3 }
 fire("PLAYER_ENTERING_WORLD")
 assert(routeStarts == 3, "a replacement waypoint must not resume Devitools tracking")
+waypoint = { map = 1, x = 0.2, y = 0.3 }
+local stopsBefore = routeStops
+ns.WhereIs.SetEnabled(false)
+assert(not locatorButton.visible and not clearButton.visible and routeStops == stopsBefore + 1, "disabling should hide both buttons and stop routing")
+assert(waypoint and not ns.WhereIs.IsEnabled(), "disabling must preserve the existing pin")
+fire("PLAYER_ENTERING_WORLD")
+assert(routeStarts == 3, "a disabled tool must not resume routing")
+ns.WhereIs.SetEnabled(true)
+assert(locatorButton.visible and clearButton.visible and routeStarts == 4, "re-enabling should restore the buttons and route")
 messages, waypoint = {}, nil
 local find = ns.WhereIs.FindNearest
 local category = { key = "innkeeper", label = "Innkeeper" }

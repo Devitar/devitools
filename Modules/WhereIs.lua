@@ -27,6 +27,10 @@ local function message(text)
     print("|cff66ccffDevitools:|r " .. text)
 end
 
+local function isEnabled()
+    return type(DevitoolsDB) ~= "table" or DevitoolsDB.whereIsEnabled ~= false
+end
+
 -- A micro map can sit inside a zone. Stop at the zone rather than comparing
 -- percentages or considering an entire continent to be one zone.
 local function zoneMap(mapID)
@@ -43,6 +47,7 @@ local function zoneMap(mapID)
 end
 
 local function findNearest(category)
+    if not isEnabled() then return end
     if InCombatLockdown() then
         message("Please search outside combat.")
         return
@@ -109,7 +114,7 @@ local function findNearest(category)
             name = npc.name, service = category.label, zone = zoneName, source = npc.source,
         }
     end
-    message("Pinned " .. npc.name .. " in " .. zoneName .. ".")
+    message("Pinned " .. npc.name .. " in " .. zoneName .. ". Calculating walking route...")
     if ns.WalkingRoute then
         ns.WalkingRoute.Start(npc.map, npc.x, npc.y)
     else
@@ -162,7 +167,7 @@ clearButton:SetPoint("TOP", button, "BOTTOM", 0, -3)
 clearButton:SetText("Clear pin")
 clearButton:Hide()
 local function updateClearButton()
-    if C_Map.HasUserWaypoint() then
+    if isEnabled() and C_Map.HasUserWaypoint() then
         clearButton:Show()
     else
         clearButton:Hide()
@@ -181,9 +186,8 @@ end)
 local waypointEvents = CreateFrame("Frame")
 waypointEvents:RegisterEvent("PLAYER_ENTERING_WORLD")
 waypointEvents:RegisterEvent("USER_WAYPOINT_UPDATED")
-waypointEvents:SetScript("OnEvent", function(_, event)
-    updateClearButton()
-    if event ~= "PLAYER_ENTERING_WORLD" or not ns.WalkingRoute then return end
+local function resumeSavedRoute()
+    if not isEnabled() or not ns.WalkingRoute then return end
     local saved = type(DevitoolsCharacterDB) == "table" and DevitoolsCharacterDB.whereIsWaypoint
     local current = C_Map.GetUserWaypoint()
     local position = current and current.position
@@ -192,6 +196,12 @@ waypointEvents:SetScript("OnEvent", function(_, event)
         and type(position.x) == "number" and type(position.y) == "number"
         and math.abs(position.x - saved.x) < 0.00001 and math.abs(position.y - saved.y) < 0.00001 then
         ns.WalkingRoute.Start(saved.map, saved.x, saved.y)
+    end
+end
+waypointEvents:SetScript("OnEvent", function(_, event)
+    updateClearButton()
+    if event == "PLAYER_ENTERING_WORLD" then
+        resumeSavedRoute()
     end
 end)
 button:SetScript("OnDragStart", function(self)
@@ -251,6 +261,15 @@ events:SetScript("OnEvent", function(self, _, loaded)
     if type(DevitoolsCharacterDB) ~= "table" then
         DevitoolsCharacterDB = {}
     end
+    if type(DevitoolsDB) ~= "table" then
+        DevitoolsDB = {}
+    end
+    if isEnabled() then
+        button:Show()
+    else
+        button:Hide()
+    end
+    updateClearButton()
     local position = DevitoolsCharacterDB.whereIsPosition
     if type(position) == "table" and type(position[1]) == "string" and type(position[2]) == "string"
         and type(position[3]) == "number" and type(position[4]) == "number" then
@@ -260,4 +279,43 @@ events:SetScript("OnEvent", function(self, _, loaded)
     self:UnregisterEvent("ADDON_LOADED")
 end)
 
-ns.WhereIs = { FindNearest = findNearest }
+local function setEnabled(enabled)
+    if type(DevitoolsDB) ~= "table" then
+        DevitoolsDB = {}
+    end
+    DevitoolsDB.whereIsEnabled = enabled
+    if enabled then
+        button:Show()
+        updateClearButton()
+        resumeSavedRoute()
+    else
+        button:Hide()
+        clearButton:Hide()
+        if ns.WalkingRoute then
+            ns.WalkingRoute.Stop()
+        end
+    end
+end
+
+if ns.Settings then
+    local panel = ns.Settings.RegisterPage("Where is...")
+    local heading = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+    heading:SetPoint("TOPLEFT", 20, -20)
+    heading:SetText("Where is...")
+    local description = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    description:SetPoint("TOPLEFT", heading, "BOTTOMLEFT", 0, -8)
+    description:SetText("Find nearby services and show a walking route.")
+    local toggle = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
+    toggle:SetPoint("TOPLEFT", 20, -72)
+    local label = toggle:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    label:SetPoint("LEFT", toggle, "RIGHT", 2, 0)
+    label:SetText("Enable Where is...")
+    toggle:SetScript("OnClick", function(self)
+        setEnabled(self:GetChecked() and true or false)
+    end)
+    panel:SetScript("OnShow", function()
+        toggle:SetChecked(isEnabled())
+    end)
+end
+
+ns.WhereIs = { FindNearest = findNearest, IsEnabled = isEnabled, SetEnabled = setEnabled }

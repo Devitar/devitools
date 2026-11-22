@@ -1,6 +1,16 @@
 local addonName, ns = ...
 local spells = ns.SpellData
 local buffs = spells.classBuffs
+local utilitySpells = {}
+for _, families in pairs(buffs) do
+    for _, family in ipairs(families) do
+        if family.utility then
+            for _, id in ipairs(family.spells) do
+                utilitySpells[id] = true
+            end
+        end
+    end
+end
 
 local defaults = { wellFed = true, wellRested = true, enabled = true, locked = false, refresh = 300 }
 local db
@@ -68,7 +78,10 @@ local function buffEnabled(id)
     if id == 687 and characterDB.demonSkinEnabled ~= nil then
         return characterDB.demonSkinEnabled
     end
-    return db.buffs[id] ~= false
+    if db.buffs[id] ~= nil then
+        return db.buffs[id] ~= false
+    end
+    return not utilitySpells[id]
 end
 
 local function setBuffEnabled(id, enabled)
@@ -239,10 +252,16 @@ end)
 
 -- Register a canvas in the game's AddOns settings so it remains accessible
 -- even when reminders are hidden or disabled.
-local panel = CreateFrame("Frame")
+local page = ns.Settings.RegisterPage("Buff Reminder")
+local scroll = CreateFrame("ScrollFrame", nil, page, "UIPanelScrollFrameTemplate")
+scroll:SetPoint("TOPLEFT", page, "TOPLEFT", 0, 0)
+scroll:SetPoint("BOTTOMRIGHT", page, "BOTTOMRIGHT", -26, 0)
+local panel = CreateFrame("Frame", nil, scroll)
+panel:SetSize(560, 600)
+scroll:SetScrollChild(panel)
 local heading = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
 heading:SetPoint("TOPLEFT", 20, -20)
-heading:SetText("Devitools")
+heading:SetText("Buff Reminder")
 local description = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
 description:SetPoint("TOPLEFT", heading, "BOTTOMLEFT", 0, -8)
 description:SetText("Choose which reminders to show. Changes apply immediately.")
@@ -338,19 +357,73 @@ hint:SetPoint("TOPLEFT", spellsHeading, "BOTTOMLEFT", 0, -6)
 hint:SetText("Only learned spells are reminded. Related alternatives share a reminder.")
 local _, playerClass = UnitClass("player")
 local count = 0
+local listTop = -275
+if playerClass == "WARLOCK" then
+    local armorName = spellName(706) or "Demon Armor"
+    local skinName = spellName(687) or "Demon Skin"
+    checkbox(armorName, 20, listTop, function() return buffEnabled(706) end,
+        function(v) setBuffEnabled(706, v) end)
+    checkbox(skinName .. " (replaced by " .. armorName .. ")", 40, listTop - 30,
+        function() return buffEnabled(687) end, function(v) setBuffEnabled(687, v) end)
+    local upgradeHint = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    upgradeHint:SetPoint("TOPLEFT", 70, listTop - 60)
+    upgradeHint:SetText("Turns off when you learn Demon Armor; you can turn it back on.")
+    listTop = listTop - 90
+elseif playerClass == "MAGE" then
+    local iceName = spellName(7302) or "Ice Armor"
+    local frostName = spellName(168) or "Frost Armor"
+    checkbox(iceName, 20, listTop, function() return buffEnabled(7302) end,
+        function(v) setBuffEnabled(7302, v) end)
+    checkbox(frostName .. " (replaced by " .. iceName .. ")", 40, listTop - 30,
+        function() return buffEnabled(168) end, function(v) setBuffEnabled(168, v) end)
+    checkbox(spellName(6117) or "Mage Armor", 300, listTop,
+        function() return buffEnabled(6117) end, function(v) setBuffEnabled(6117, v) end)
+    local armorHint = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    armorHint:SetPoint("TOPLEFT", 50, listTop - 60)
+    armorHint:SetText("Mage Armor is an alternative; only one armor can be active.")
+    listTop = listTop - 90
+end
 for _, family in ipairs(buffs[playerClass] or {}) do
     for _, id in ipairs(family.spells) do
+        local shownAbove = family.utility or playerClass == "WARLOCK" and (id == 687 or id == 706)
+            or playerClass == "MAGE" and (id == 168 or id == 7302 or id == 6117)
+        if not shownAbove then
+            local spellID = id
+            local name = spellName(spellID) or ("Spell " .. spellID)
+            count = count + 1
+            local column = (count - 1) % 2
+            local row = math.floor((count - 1) / 2)
+            checkbox(name, 20 + column * 260, listTop - row * 30,
+                function() return buffEnabled(spellID) end,
+                function(v) setBuffEnabled(spellID, v) end)
+        end
+    end
+end
+local utilityIDs = {}
+for _, family in ipairs(buffs[playerClass] or {}) do
+    if family.utility then
+        for _, id in ipairs(family.spells) do
+            utilityIDs[#utilityIDs + 1] = id
+        end
+    end
+end
+local bottom = listTop - math.ceil(count / 2) * 30
+if #utilityIDs > 0 then
+    local utilityHeading = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    utilityHeading:SetPoint("TOPLEFT", 20, bottom - 15)
+    utilityHeading:SetText("Situational or utility buffs (off by default)")
+    for index, id in ipairs(utilityIDs) do
         local spellID = id
-        local name = spellName(spellID) or ("Spell " .. spellID)
-        count = count + 1
-        local column = (count - 1) % 2
-        local row = math.floor((count - 1) / 2)
-        checkbox(name, 20 + column * 260, -275 - row * 30,
+        local column = (index - 1) % 2
+        local row = math.floor((index - 1) / 2)
+        checkbox(spellName(spellID) or ("Spell " .. spellID), 20 + column * 260, bottom - 45 - row * 30,
             function() return buffEnabled(spellID) end,
             function(v) setBuffEnabled(spellID, v) end)
     end
+    bottom = bottom - 45 - math.ceil(#utilityIDs / 2) * 30
 end
-if count == 0 then
+panel:SetHeight(math.max(500, -bottom + 35))
+if count == 0 and playerClass ~= "WARLOCK" and playerClass ~= "MAGE" then
     local none = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     none:SetPoint("TOPLEFT", 25, -280)
     none:SetText("No class buffs are currently configured for your class.")
@@ -363,11 +436,7 @@ refreshSettings = function()
 end
 panel:SetScript("OnShow", refreshSettings)
 
-local category = Settings.RegisterCanvasLayoutCategory(panel, "Devitools")
-Settings.RegisterAddOnCategory(category)
-
-
 ns.BuffReminder = {}
 function ns.BuffReminder.OpenSettings()
-    Settings.OpenToCategory(category:GetID())
+    ns.Settings.Open()
 end
