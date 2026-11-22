@@ -29,6 +29,14 @@ The bundled data is an incomplete snapshot, not a live listing of every NPC. Som
 
 ## Development
 
+To create a CurseForge-ready archive on Windows, run from the project root:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Tools\Build.ps1
+```
+
+The script writes `build/Devitools-<version>.zip`, using the version from `Devitools.toc`. It includes files referenced by the TOC and its XML, along with the applicable license and attribution notices. Use `-OutputPath <path>` to choose a different archive location. Publish the matching source for each release as required by the included licenses.
+
 The addon loads `Devitools.lua` (core), `Data/SpellData.lua` (spell IDs and families), `Modules/BuffReminder.lua` (the reminder tool and its settings), `Data/ServiceNPCs.lua` (locator data), and `Modules/WhereIs.lua` (the locator tool) in the order listed in the TOC. WoW passes a shared addon namespace to each file.
 
 For linting, run `selene .` from the project directory. `selene.toml` selects `wow.yml`, a Lua 5.1 standard library extended with the WoW APIs and saved variables currently used by Devitools. Add new game globals to `wow.yml` as the addon grows; this keeps warnings for genuinely unknown names enabled. The lint configuration excludes bundled third-party files and test mocks.
