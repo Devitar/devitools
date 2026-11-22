@@ -30,7 +30,7 @@ for (const file of ['Curated.lua', 'Forever.lua']) {
             matches.push([Number(map), xy[i]/1000, xy[i+1]/1000]);
         }
       }
-      if (matches.length) entries.set(type + ':' + id, {type, id, name:p[2], faction, matches});
+      if (matches.length) entries.set(type + ':' + id, {type, id, name:p[2], faction, matches, source:file === 'Forever.lua' ? 'Community' : 'Curated'});
     }
   }
 }
@@ -44,7 +44,7 @@ for (const line of fs.readFileSync(path.join(base, 'Forever.lua'), 'utf8').split
     if (!coords || !/^\d+$/.test(map)) continue;
     const xy = coords.split(',').map(Number);
     if (!Number.isFinite(xy[0]) || !Number.isFinite(xy[1]) || xy[0]<0 || xy[0]>1 || xy[1]<0 || xy[1]>1) continue;
-    entries.set(type + ':' + Number(p[1]), {type, id:Number(p[1]), name:p[3], faction:p[2], matches:[[Number(map),xy[0],xy[1]]]});
+    entries.set(type + ':' + Number(p[1]), {type, id:Number(p[1]), name:p[3], faction:p[2], matches:[[Number(map),xy[0],xy[1]]], source:'Observed'});
   }
 }
 // A merchant listed as selling both Arcane Powder and Infernal Stones has
@@ -77,7 +77,7 @@ for (const line of fs.readFileSync(path.join(base, 'Forever.lua'), 'utf8').split
         matches.push([Number(map), xy[i] / 1000, xy[i+1] / 1000]);
     }
   }
-  if (matches.length) entries.set('reagent:' + id, {type:'reagent', id, name:p[2], faction, matches});
+  if (matches.length) entries.set('reagent:' + id, {type:'reagent', id, name:p[2], faction, matches, source:'Community'});
 }
 
 // Trainer rosters identify class or profession; positioned rows provide names
@@ -104,7 +104,7 @@ for (const line of trainerText.split(/\r?\n/)) {
   if (!matches.length) continue;
   for (const [type, roster] of trainerRosters) {
     const faction = roster.get(id);
-    if (['A','H','AH'].includes(faction)) entries.set(type + ':' + id, {type, id, name:p[1], faction, matches});
+    if (['A','H','AH'].includes(faction)) entries.set(type + ':' + id, {type, id, name:p[1], faction, matches, source:(p[3] === 'observed' || p[3] === 'player') ? 'Observed' : 'Curated'});
   }
 }
 // Fall back to curated coordinates for rostered trainers lacking an observed
@@ -128,7 +128,7 @@ for (const file of ['Curated.lua', 'Forever.lua']) {
     for (const [type, roster] of trainerRosters) {
       const faction = roster.get(id);
       if (!entries.has(type + ':' + id) && ['A','H','AH'].includes(faction))
-        entries.set(type + ':' + id, {type, id, name:p[2], faction, matches});
+        entries.set(type + ':' + id, {type, id, name:p[2], faction, matches, source:file === 'Forever.lua' ? 'Community' : 'Curated'});
     }
   }
 }
@@ -150,7 +150,69 @@ for (const line of fs.readFileSync(travelPath, 'utf8').split(/\r?\n/)) {
   const map = Number(p[6]), x = Number((Number(p[7]) / 100).toFixed(6)), y = Number((Number(p[8]) / 100).toFixed(6));
   if (!entries.has('innkeeper:' + id) && ['A','H','AH'].includes(faction) && names.has(id)
       && map > 0 && Number.isFinite(x) && Number.isFinite(y) && x >= 0 && x <= 1 && y >= 0 && y <= 1) {
-    entries.set('innkeeper:' + id, {type:'innkeeper', id, name:names.get(id), faction, matches:[[map,x,y]]});
+    entries.set('innkeeper:' + id, {type:'innkeeper', id, name:names.get(id), faction, matches:[[map,x,y]], source:'Travel'});
+  }
+}
+// Map only unambiguous legacy area names to Forever zone maps. A handful of
+// Forever maps changed shape; old percentages for them must not be reused.
+function parseCSV(text) {
+  const rows = []; let row = [], value = '', quoted = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (quoted) {
+      if (c === '"' && text[i+1] === '"') { value += '"'; i++; }
+      else if (c === '"') quoted = false;
+      else value += c;
+    } else if (c === '"') quoted = true;
+    else if (c === ',') { row.push(value); value = ''; }
+    else if (c === '\n') { row.push(value.replace(/\r$/, '')); rows.push(row); row = []; value = ''; }
+    else value += c;
+  }
+  if (row.length || value) { row.push(value.replace(/\r$/, '')); rows.push(row); }
+  const header = rows.shift();
+  return rows.filter(r => r.length === header.length).map(r => Object.fromEntries(header.map((h, i) => [h, r[i]])));
+}
+const fixtures = path.join(base, '..', 'tools', 'fixtures', 'client');
+const areas = parseCSV(fs.readFileSync(path.join(fixtures, 'AreaTable-1.60.1.70862-enUS.csv'), 'utf8'));
+const maps = parseCSV(fs.readFileSync(path.join(fixtures, 'UiMap-1.60.1.70862-enUS.csv'), 'utf8'));
+const byName = new Map();
+for (const map of maps) {
+  if (Number(map.Type) !== 3 || !map.Name_lang) continue;
+  const list = byName.get(map.Name_lang) || [];
+  list.push(Number(map.ID)); byName.set(map.Name_lang, list);
+}
+const areaToMap = new Map();
+const reshaped = new Set([1412, 1423, 1433, 1453]);
+for (const area of areas) {
+  const options = byName.get(area.AreaName_lang) || [];
+  if (options.length === 1 && !reshaped.has(options[0])) areaToMap.set(Number(area.ID), options[0]);
+}
+const legacyBlock = raw.match(/units\s*=\s*\[==\[([\s\S]*?)\]==\]/);
+if (!legacyBlock) throw new Error('Unable to locate legacy NPC data');
+for (const line of legacyBlock[1].split(/\r?\n/)) {
+  const p = line.split('\t');
+  if (!/^\d+$/.test(p[0]) || !p[4]) continue;
+  const id = Number(p[0]), matches = [];
+  for (const part of p[4].split(';')) {
+    const [area, coords] = part.split(':');
+    const map = areaToMap.get(Number(area));
+    if (!map || !coords) continue;
+    const xy = coords.split(',').map(Number);
+    for (let i = 0; i + 1 < xy.length; i += 2) {
+      if (Number.isFinite(xy[i]) && Number.isFinite(xy[i+1]) && xy[i] >= 0 && xy[i] <= 1000 && xy[i+1] >= 0 && xy[i+1] <= 1000)
+        matches.push([map, xy[i] / 1000, xy[i+1] / 1000]);
+    }
+  }
+  if (!matches.length || !names.has(id)) continue;
+  for (const [type, roster] of [...Object.entries(rosters), ...trainerRosters]) {
+    const faction = roster.get(id);
+    if (!entries.has(type + ':' + id) && ['A','H','AH'].includes(faction))
+      entries.set(type + ':' + id, {type, id, name:names.get(id), faction, matches, source:'Classic'});
+  }
+  if (!entries.has('reagent:' + id) && reagentVendors.every(ids => ids.has(id))) {
+    const faction = rosters.vendor.get(id);
+    if (['A','H','AH'].includes(faction))
+      entries.set('reagent:' + id, {type:'reagent', id, name:names.get(id), faction, matches, source:'Classic'});
   }
 }
 let out = '-- Generated service NPC locations; see Data/NPC_SOURCES.md for attribution.\nlocal _, ns = ...\n\nns.ServiceNPCs = {\n';
@@ -159,7 +221,7 @@ for (const type of [...standardTypes, 'reagent', ...trainerRosters.keys()]) {
   let count=0;
   for (const e of entries.values()) if(e.type===type) for (const pos of e.matches) {
     const name = JSON.stringify(e.name).replace(/\\u([0-9a-f]{4})/gi, (_,h)=>String.fromCharCode(parseInt(h,16)));
-    out += `        { id = ${e.id}, name = ${name}, faction = "${e.faction}", map = ${pos[0]}, x = ${pos[1]}, y = ${pos[2]} },\n`;
+    out += `        { id = ${e.id}, name = ${name}, faction = "${e.faction}", map = ${pos[0]}, x = ${pos[1]}, y = ${pos[2]}, source = "${e.source || 'Curated'}" },\n`;
     count++;
   }
   out += '    },\n';
@@ -167,3 +229,11 @@ for (const type of [...standardTypes, 'reagent', ...trainerRosters.keys()]) {
 }
 out += '}\n';
 fs.writeFileSync(process.argv[3], out, 'utf8');
+// Report unique roster identities, not locations; names and access can be
+// present even when no safe coordinate could be imported.
+for (const [type, roster] of [...Object.entries(rosters), ...trainerRosters]) {
+  if (type === 'vendor') continue;
+  const eligible = [...roster].filter(([, faction]) => ['A','H','AH'].includes(faction));
+  const positioned = eligible.filter(([id]) => entries.has(type + ':' + id));
+  process.stdout.write(`${type}: ${positioned.length}/${eligible.length} rostered NPCs have positions\n`);
+}

@@ -106,10 +106,13 @@ local function findNearest(category)
     if type(DevitoolsCharacterDB) == "table" then
         DevitoolsCharacterDB.whereIsWaypoint = {
             map = npc.map, x = npc.x, y = npc.y,
-            name = npc.name, service = category.label, zone = zoneName,
+            name = npc.name, service = category.label, zone = zoneName, source = npc.source,
         }
     end
     message("Pinned " .. npc.name .. " in " .. zoneName .. ".")
+    if npc.source == "Classic" then
+        message("This location comes from Classic data and has not been verified in Forever.")
+    end
 end
 
 -- Blizzard's waypoint stores coordinates only. Add details to its map tooltip
@@ -135,6 +138,9 @@ GameTooltip:HookScript("OnShow", function(tooltip)
     tooltip:AddLine(" ")
     tooltip:AddLine(saved.name, 1, 0.82, 0)
     tooltip:AddLine(saved.service .. " - " .. saved.zone, 1, 1, 1)
+    if saved.source == "Classic" then
+        tooltip:AddLine("Classic location; not verified in Forever", 1, 0.82, 0, true)
+    end
     tooltip:Show()
 end)
 local button = CreateFrame("Button", "DevitoolsWhereIsButton", UIParent, "UIPanelButtonTemplate")
@@ -144,6 +150,30 @@ button:SetText("Where is...")
 button:SetClampedToScreen(true)
 button:SetMovable(true)
 button:RegisterForDrag("RightButton")
+-- This controls Blizzard's single user waypoint, regardless of who placed it.
+local clearButton = CreateFrame("Button", "DevitoolsClearWaypointButton", UIParent, "UIPanelButtonTemplate")
+clearButton:SetSize(110, 24)
+clearButton:SetPoint("TOP", button, "BOTTOM", 0, -3)
+clearButton:SetText("Clear pin")
+clearButton:Hide()
+local function updateClearButton()
+    if C_Map.HasUserWaypoint() then
+        clearButton:Show()
+    else
+        clearButton:Hide()
+    end
+end
+clearButton:SetScript("OnClick", function()
+    C_Map.ClearUserWaypoint()
+    if type(DevitoolsCharacterDB) == "table" then
+        DevitoolsCharacterDB.whereIsWaypoint = nil
+    end
+    updateClearButton()
+end)
+local waypointEvents = CreateFrame("Frame")
+waypointEvents:RegisterEvent("PLAYER_ENTERING_WORLD")
+waypointEvents:RegisterEvent("USER_WAYPOINT_UPDATED")
+waypointEvents:SetScript("OnEvent", updateClearButton)
 button:SetScript("OnDragStart", function(self)
     if not InCombatLockdown() then
         self:StartMoving()

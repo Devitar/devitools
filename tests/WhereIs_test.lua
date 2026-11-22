@@ -1,7 +1,13 @@
 -- Run with a Lua 5.1-compatible interpreter from the project root.
 local messages, waypoint = {}, nil
 local faction, currentMap, allowPin, setPin = "Alliance", 1, true, true
-local locatorButton, openedMenu
+local locatorButton, clearButton, openedMenu
+local eventFrames = {}
+local function fire(event)
+    for _, frame in ipairs(eventFrames[event] or {}) do
+        if frame.OnEvent then frame.OnEvent(frame, event) end
+    end
+end
 local tooltipLines, tooltipHook = {}, nil
 local pinFunction = function() end
 WaypointLocationPinMixin = { CopySlashCommandToClipboard = pinFunction }
@@ -24,6 +30,8 @@ UnitClass = function() return "Warlock", "WARLOCK" end
 print = function(text) table.insert(messages, text) end
 C_Map = {
     GetBestMapForUnit = function() return currentMap end,
+    HasUserWaypoint = function() return waypoint ~= nil end,
+    ClearUserWaypoint = function() waypoint = nil; fire("USER_WAYPOINT_UPDATED") end,
     GetUserWaypoint = function()
         if waypoint then return { uiMapID = waypoint.map, position = vector(waypoint.x, waypoint.y) } end
     end,
@@ -37,14 +45,23 @@ C_Map = {
     end,
     CanSetUserWaypointOnMap = function() return allowPin end,
     SetUserWaypoint = function(point)
-        if setPin then waypoint = point end
+        if setPin then waypoint = point; fire("USER_WAYPOINT_UPDATED") end
         return setPin
     end,
 }
 UiMapPoint = { CreateFromCoordinates = function(map, x, y) return { map = map, x = x, y = y } end }
 local frame = {}
 frame.__index = function(self, name)
-    if name == "SetScript" then
+    if name == "RegisterEvent" then
+        return function(frameObject, event)
+            eventFrames[event] = eventFrames[event] or {}
+            table.insert(eventFrames[event], frameObject)
+        end
+    elseif name == "Show" then
+        return function(frameObject) frameObject.visible = true end
+    elseif name == "Hide" then
+        return function(frameObject) frameObject.visible = false end
+    elseif name == "SetScript" then
         return function(_, event, handler) self[event] = handler end
     end
     return function() end
@@ -52,6 +69,7 @@ end
 CreateFrame = function(_, name)
     local result = setmetatable({}, frame)
     if name == "DevitoolsWhereIsButton" then locatorButton = result end
+    if name == "DevitoolsClearWaypointButton" then clearButton = result end
     return result
 end
 local function createMenu()
@@ -79,6 +97,18 @@ local ns = { ServiceNPCs = {
     flight = {},
 } }
 assert(loadfile("Modules/WhereIs.lua"))("Devitools", ns)
+assert(clearButton and not clearButton.visible, "clear button must start hidden")
+waypoint = { map = 1, x = 0.1, y = 0.2 }
+fire("PLAYER_ENTERING_WORLD")
+assert(clearButton.visible, "an existing pin must show the clear button at login")
+clearButton.OnClick()
+assert(not waypoint and not clearButton.visible, "clearing a pin must hide the button")
+waypoint = { map = 1, x = 0.1, y = 0.2 }
+fire("USER_WAYPOINT_UPDATED")
+assert(clearButton.visible, "a manually placed pin must show the button")
+waypoint = nil
+fire("USER_WAYPOINT_UPDATED")
+assert(not clearButton.visible, "removing a pin externally must hide the button")
 locatorButton.OnClick(locatorButton)
 assert(openedMenu.buttons["Warlock Trainer"], "menu must select the player's class trainer")
 for _, name in ipairs({ "Repair Vendor", "Banker", "Auctioneer", "Stable Master", "Reagent Vendor" }) do
@@ -94,6 +124,9 @@ openedMenu.buttons["Warlock Trainer"].callback()
 assert(waypoint and messages[#messages]:find("Warlock trainer", 1, true), "class menu must search the player's class")
 openedMenu.buttons["Profession Trainer"].buttons["Fishing"].callback()
 assert(waypoint and messages[#messages]:find("Fishing trainer", 1, true), "profession menu must search the selected profession")
+assert(clearButton.visible, "a Devitools waypoint must show the clear button")
+clearButton.OnClick()
+assert(not waypoint and not clearButton.visible and not DevitoolsCharacterDB.whereIsWaypoint, "clear must remove the pin and its saved details")
 messages, waypoint = {}, nil
 local find = ns.WhereIs.FindNearest
 local category = { key = "innkeeper", label = "Innkeeper" }
@@ -133,6 +166,19 @@ assert(loadfile("Data/ServiceNPCs.lua"))("Devitools", actualData)
 for _, key in ipairs({ "repair", "banker", "auctioneer", "stablemaster", "reagent", "trainer_class_warlock", "trainer_profession_alchemy", "trainer_profession_fishing" }) do
     assert(actualData.ServiceNPCs[key] and #actualData.ServiceNPCs[key] > 0, "missing service data for " .. key)
 end
+local classic
+for _, npc in ipairs(actualData.ServiceNPCs.repair) do
+    if npc.source == "Classic" then classic = npc; break end
+end
+assert(classic, "expanded data must include labeled Classic fallback positions")
+local fallbackNS = { ServiceNPCs = { repair = { classic } } }
+assert(loadfile("Modules/WhereIs.lua"))("Devitools", fallbackNS)
+faction = classic.faction:find("A", 1, true) and "Alliance" or "Horde"
+currentMap, messages, waypoint = classic.map, {}, nil
+allowPin, setPin = true, true
+fallbackNS.WhereIs.FindNearest({ key = "repair", label = "Repair Vendor" })
+assert(waypoint and messages[#messages]:find("Classic data", 1, true), "Classic fallback must be disclosed when pinned")
+assert(DevitoolsCharacterDB.whereIsWaypoint.source == "Classic", "pin metadata must preserve location source")
 local thulbek
 for _, npc in ipairs(actualData.ServiceNPCs.innkeeper) do
     if npc.id == 5814 then thulbek = npc end

@@ -75,3 +75,7 @@ globals:
     any: true
   WaypointLocationPinMixin.CopySlashCommandToClipboard:
     any: true
+  C_Map.HasUserWaypoint:
+    any: true
+  C_Map.ClearUserWaypoint:
+    any: true
