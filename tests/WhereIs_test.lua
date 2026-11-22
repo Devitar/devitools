@@ -16,8 +16,11 @@ DevitoolsCharacterDB = {}
 GameTooltip = {
     HookScript = function(_, _, callback) tooltipHook = callback end,
     GetOwner = function(self) return self.owner end,
+    SetOwner = function() end,
+    SetText = function() end,
     AddLine = function(_, text) table.insert(tooltipLines, text) end,
     Show = function() end,
+    Hide = function() end,
 }
 local function vector(x, y)
     return { GetXY = function() return x, y end }
@@ -64,6 +67,18 @@ frame.__index = function(self, name)
         return function(frameObject) frameObject.visible = false end
     elseif name == "SetScript" then
         return function(_, event, handler) self[event] = handler end
+    elseif name == "GetScript" then
+        return function(frameObject, event) return rawget(frameObject, event) end
+    elseif name == "HookScript" then
+        return function(_, event, handler) self[event] = handler end
+    elseif name == "SetButtonState" then
+        return function(frameObject, state) frameObject.buttonState = state end
+    elseif name == "GetHighlightTexture" then
+        return function(frameObject) return rawget(frameObject, "highlight") end
+    elseif name == "UnlockHighlight" then
+        return function(frameObject) frameObject.highlightLocked = false end
+    elseif name == "GetPoint" then
+        return function() return "TOPLEFT", UIParent, "TOPLEFT", 25, -250 end
     elseif name == "StartMoving" then
         return function() drags = drags + 1 end
     end
@@ -71,7 +86,12 @@ frame.__index = function(self, name)
 end
 CreateFrame = function(_, name)
     local result = setmetatable({}, frame)
-    if name == "DevitoolsWhereIsButton" then locatorButton = result end
+    if name == "DevitoolsWhereIsButton" then
+        locatorButton = result
+        result.artwork = "up"
+        result.OnMouseDown = function(self) self.artwork = "down" end
+        result.OnMouseUp = function(self) self.artwork = "up" end
+    end
     if name == "DevitoolsClearWaypointButton" then clearButton = result end
     return result
 end
@@ -197,6 +217,17 @@ assert(drags == 0, "locked button must not start moving")
 opts.Set("lockButton", false)
 locatorButton.OnDragStart(locatorButton)
 assert(drags == 1, "unlocked button should be movable")
+locatorButton.buttonState = "PUSHED"
+locatorButton.OnMouseDown(locatorButton, "RightButton")
+assert(locatorButton.artwork == "up", "right mouse-down must not press the template artwork")
+locatorButton.artwork = "down"
+locatorButton.OnDragStop(locatorButton)
+assert(locatorButton.buttonState == "NORMAL", "finishing a drag must release the button's pressed state")
+assert(locatorButton.artwork == "up", "finishing a drag must restore the template artwork")
+locatorButton.OnMouseDown(locatorButton, "LeftButton")
+assert(locatorButton.artwork == "down", "left mouse-down should retain the template's pressed appearance")
+locatorButton.OnMouseUp(locatorButton, "RightButton")
+assert(locatorButton.artwork == "up", "the template's mouse-up should restore its appearance")
 opts.Set("searchOtherZones", false)
 currentMap, messages, waypoint = 3, {}, nil
 find(category)

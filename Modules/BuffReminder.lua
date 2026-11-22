@@ -21,11 +21,11 @@ frame:SetSize(240, 40)
 frame:SetPoint("CENTER", UIParent, "CENTER", 0, 180)
 frame:SetMovable(true)
 frame:EnableMouse(true)
-frame:RegisterForDrag("LeftButton")
+frame:RegisterForDrag("RightButton")
 frame:SetClampedToScreen(true)
 frame:SetBackdrop({ bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background", edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border", tile = true, tileSize = 32, edgeSize = 16, insets = { left = 4, right = 4, top = 4, bottom = 4 } })
 frame.title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-frame.title:SetPoint("TOP", 0, -9)
+frame.title:SetPoint("TOP", -10, -9)
 frame.title:SetText("Devitools: Buff reminders")
 frame.rows = {}
 frame:Hide()
@@ -213,13 +213,52 @@ local function update()
     frame:Show()
 end
 
-frame:SetScript("OnDragStart", function(self)
-    if db and not db.locked and not InCombatLockdown() then self:StartMoving() end
-end)
-frame:SetScript("OnDragStop", function(self)
-    self:StopMovingOrSizing()
-    local point, _, relativePoint, x, y = self:GetPoint()
+local function startMoving()
+    if db and not db.locked and not InCombatLockdown() then
+        frame:StartMoving()
+    end
+end
+local function stopMoving()
+    frame:StopMovingOrSizing()
+    local point, _, relativePoint, x, y = frame:GetPoint()
     db.position = { point, relativePoint, x, y }
+end
+frame:SetScript("OnDragStart", startMoving)
+frame:SetScript("OnDragStop", stopMoving)
+frame:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:SetText("Buff reminders")
+    if db and db.locked then
+        GameTooltip:AddLine("Window locked. Unlock it in Buff Reminder settings to move it.", 1, 1, 1, true)
+    else
+        GameTooltip:AddLine("Right-drag to move. You can lock the window in Buff Reminder settings.", 1, 1, 1, true)
+    end
+    GameTooltip:Show()
+end)
+frame:SetScript("OnLeave", function()
+    GameTooltip:Hide()
+end)
+
+local settingsButton = CreateFrame("Button", "DevitoolsBuffSettingsButton", frame)
+settingsButton:SetSize(20, 20)
+settingsButton:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -6, -5)
+settingsButton:SetNormalTexture("Interface\\Buttons\\UI-OptionsButton")
+settingsButton:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
+settingsButton:RegisterForClicks("LeftButtonUp")
+settingsButton:RegisterForDrag("RightButton")
+settingsButton:SetScript("OnDragStart", startMoving)
+settingsButton:SetScript("OnDragStop", stopMoving)
+settingsButton:SetScript("OnClick", function()
+    ns.Settings.Open("Buff Reminder")
+end)
+settingsButton:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:SetText("Buff Reminder settings")
+    GameTooltip:AddLine("Click to choose which reminders to show.", 1, 1, 1, true)
+    GameTooltip:Show()
+end)
+settingsButton:SetScript("OnLeave", function()
+    GameTooltip:Hide()
 end)
 
 local refreshSettings
@@ -612,5 +651,5 @@ panel:SetScript("OnShow", refreshSettings)
 
 ns.BuffReminder = {}
 function ns.BuffReminder.OpenSettings()
-    ns.Settings.Open()
+    ns.Settings.Open("Buff Reminder")
 end

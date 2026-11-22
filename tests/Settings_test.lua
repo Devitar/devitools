@@ -10,7 +10,8 @@ Settings = {
         return root
     end,
     RegisterCanvasLayoutSubcategory = function(parent, page, name)
-        local category = { parent = parent, page = page, name = name }
+        local id = 101 + #subcategories
+        local category = { parent = parent, page = page, name = name, GetID = function() return id end }
         subcategories[#subcategories + 1] = category
         return category
     end,
@@ -27,4 +28,7 @@ assert(subcategories[2].parent == root and subcategories[2].page == finder and s
 assert(registered[2] == subcategories[1] and registered[3] == subcategories[2], "tool categories must be registered")
 ns.Settings.Open()
 assert(opened == 42, "settings should open the registered category")
+ns.Settings.Open("Buff Reminder")
+assert(opened == subcategories[1]:GetID(), "settings should open the requested tool page")
+assert(opened ~= subcategories[2]:GetID(), "settings must not open a different tool page")
 io.write("Settings tests passed\n")

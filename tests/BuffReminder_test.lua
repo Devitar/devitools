@@ -1,6 +1,6 @@
 -- Run with a Lua 5.1-compatible interpreter from the project root.
 local frames, events = {}, {}
-local reminderFrame
+local reminderFrame, settingsButton, openedSettings
 local methods = {}
 methods.__index = function(_, key)
     return methods[key] or function() end
@@ -8,6 +8,8 @@ end
 function methods:SetScript(event, fn) self[event] = fn end
 function methods:HookScript(event, fn) self[event] = fn end
 function methods:RegisterEvent(event) events[event] = self end
+function methods:RegisterForDrag(button) self.dragButton = button end
+function methods:StartMoving() self.startedMoving = true end
 function methods:CreateFontString()
     return setmetatable({ parent = self }, methods)
 end
@@ -31,12 +33,21 @@ CreateFrame = function(kind, name, parent)
     local frame = setmetatable({ kind = kind, parent = parent }, methods)
     frames[#frames + 1] = frame
     if name == "DevitoolsReminderFrame" then reminderFrame = frame end
+    if name == "DevitoolsBuffSettingsButton" then settingsButton = frame end
     return frame
 end
 UIParent, ChatFontNormal = {}, {}
 UnitClass = function() return "Warlock", "WARLOCK" end
 UnitIsDeadOrGhost = function() return false end
 InCombatLockdown = function() return false end
+local tooltipText, tooltipHidden
+GameTooltip = {
+    SetOwner = function() end,
+    SetText = function() end,
+    AddLine = function(_, text) tooltipText = text end,
+    Show = function() tooltipHidden = false end,
+    Hide = function() tooltipHidden = true end,
+}
 local activeName
 C_UnitAuras = { GetAuraDataByIndex = function(_, index)
     if index == 1 and activeName then return { name = activeName, expirationTime = 0, spellId = 1 } end
@@ -51,7 +62,8 @@ end }
 C_Spell = { GetSpellName = function(id)
     return ({ [132] = "Detect Invisibility", [5697] = "Unending Breath", [706] = "Demon Armor", [19028] = "Soul Link" })[id]
 end }
-local ns = { Settings = { RegisterPage = function() return CreateFrame("Frame") end } }
+local ns = { Settings = { RegisterPage = function() return CreateFrame("Frame") end,
+    Open = function(label) openedSettings = label end } }
 ns.WeaponEnchants = { AppendReminders = function(settings, _, reminders)
     if settings.testLong then
         reminders[#reminders + 1] = "Main-hand Firestone/Spellstone (missing)"
@@ -66,6 +78,25 @@ DevitoolsCharacterDB = {}
 events.ADDON_LOADED.OnEvent(events.ADDON_LOADED, "ADDON_LOADED", "Devitools")
 assert(DevitoolsDB.wellFed == false and DevitoolsDB.wellRested == false,
     "Well Fed and Well-Rested must default off")
+assert(reminderFrame.dragButton == "RightButton", "reminder frame must use right-drag")
+assert(settingsButton and settingsButton.dragButton == "RightButton", "settings button must allow right-dragging the window")
+settingsButton.OnClick(settingsButton)
+assert(openedSettings == "Buff Reminder", "the cog should open the Buff Reminder settings page")
+settingsButton.OnEnter(settingsButton)
+assert(tooltipText:find("choose which reminders", 1, true), "the cog should explain its purpose")
+reminderFrame.OnEnter(reminderFrame)
+assert(tooltipText:find("Right%-drag"), "unlocked tooltip should explain how to move the window")
+reminderFrame.OnDragStart(reminderFrame)
+assert(reminderFrame.startedMoving, "the unlocked reminder window should move")
+reminderFrame.startedMoving = false
+DevitoolsDB.locked = true
+reminderFrame.OnDragStart(reminderFrame)
+assert(not reminderFrame.startedMoving, "the locked reminder window must not move")
+reminderFrame.OnEnter(reminderFrame)
+assert(tooltipText:find("locked"), "locked tooltip should explain how to unlock")
+reminderFrame.OnLeave(reminderFrame)
+assert(tooltipHidden, "leaving the reminder window should hide the tooltip")
+DevitoolsDB.locked = false
 for _, frame in ipairs(frames) do
     if frame.kind == "Frame" and rawget(frame, "parent") and frame.parent.kind == "ScrollFrame" and rawget(frame, "OnShow") then
         frame.OnShow(frame)

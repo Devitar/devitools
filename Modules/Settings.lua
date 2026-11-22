@@ -10,14 +10,17 @@ description:SetText("Choose a tool from the list to configure it.")
 
 local category = Settings.RegisterCanvasLayoutCategory(panel, "Devitools")
 Settings.RegisterAddOnCategory(category)
+local pages = {}
 
 ns.Settings = {}
 function ns.Settings.RegisterPage(label)
     local page = CreateFrame("Frame")
     local subcategory = Settings.RegisterCanvasLayoutSubcategory(category, page, label)
     Settings.RegisterAddOnCategory(subcategory)
+    pages[label] = subcategory
     return page
 end
-function ns.Settings.Open()
-    Settings.OpenToCategory(category:GetID())
+function ns.Settings.Open(label)
+    local target = pages[label] or category
+    Settings.OpenToCategory(target:GetID())
 end

@@ -170,6 +170,16 @@ button:SetText("Where is...")
 button:SetClampedToScreen(true)
 button:SetMovable(true)
 button:RegisterForDrag("RightButton")
+-- UIPanelButtonTemplate changes its artwork in OnMouseDown/OnMouseUp. A drag
+-- can consume the mouse-up, leaving that artwork pressed even after
+-- SetButtonState("NORMAL"). Do not press the artwork for right-click drags.
+local templateMouseDown = button:GetScript("OnMouseDown")
+local templateMouseUp = button:GetScript("OnMouseUp")
+button:SetScript("OnMouseDown", function(self, mouseButton)
+    if mouseButton ~= "RightButton" and templateMouseDown then
+        templateMouseDown(self, mouseButton)
+    end
+end)
 -- This controls Blizzard's single user waypoint, regardless of who placed it.
 local clearButton = CreateFrame("Button", "DevitoolsClearWaypointButton", UIParent, "UIPanelButtonTemplate")
 clearButton:SetSize(110, 24)
@@ -221,6 +231,10 @@ button:SetScript("OnDragStart", function(self)
 end)
 button:SetScript("OnDragStop", function(self)
     self:StopMovingOrSizing()
+    self:SetButtonState("NORMAL")
+    if templateMouseUp then
+        templateMouseUp(self, "RightButton")
+    end
     local point, _, relativePoint, x, y = self:GetPoint()
     if type(DevitoolsCharacterDB) == "table" then
         DevitoolsCharacterDB.whereIsPosition = { point, relativePoint, x, y }
