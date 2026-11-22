@@ -1,6 +1,6 @@
 ## Interface: 16001
 ## Title: Devitools
-## Notes: Reminders for your own buffs and Well Fed.
+## Notes: Quality-of-life tools for WoW Forever.
 ## Version: 0.1.0
 ## SavedVariables: DevitoolsDB
 ## SavedVariablesPerCharacter: DevitoolsCharacterDB
@@ -8,3 +8,6 @@
 Devitools.lua
 Data\SpellData.lua
 Modules\BuffReminder.lua
+
+Data\ServiceNPCs.lua
+Modules\WhereIs.lua

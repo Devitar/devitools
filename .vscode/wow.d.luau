@@ -17,3 +17,10 @@ declare SlashCmdList: any
 declare SLASH_DEVITOOLS1: any
 declare DevitoolsDB: any
 declare DevitoolsCharacterDB: any
+declare UnitFactionGroup: any
+declare CreateVector2D: any
+declare GameTooltip: any
+declare MenuUtil: any
+declare UiMapPoint: any
+declare C_Map: any
+declare WaypointLocationPinMixin: any

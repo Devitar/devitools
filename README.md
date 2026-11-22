@@ -1,6 +1,6 @@
 # Devitools
 
-Devitools is a suite of quality-of-life tools for World of Warcraft: Forever (interface 16001). Its first tool, Buff Reminder, helps you keep track of your buffs; more tools can be added to the suite over time.
+Devitools is a suite of quality-of-life tools for World of Warcraft: Forever (interface 16001). Its tools help you keep track of buffs and find nearby services; more can be added over time.
 
 ## Installation and settings
 
@@ -20,8 +20,16 @@ Well-Rested tracks the sleeping bag XP aura when present, missing, or nearing ex
 
 The initial spell list covers common self buffs for druids, mages, priests, warlocks, warriors, paladins, and shamans. This is a starting list, not a complete catalog of every buff, and Forever-specific spell or aura changes may require adjustments after in-game testing. Reminders are informational and do not cast spells or check for food in your bags. See [BUFF_COVERAGE.md](BUFF_COVERAGE.md) for the class-by-class inventory, sources, and outstanding verification.
 
+## Where is...
+
+Click the **Where is...** button to find an innkeeper, flight master, repair vendor, banker, auctioneer, stable master, reagent vendor, your class trainer, or a trainer for a selected profession. The tool searches recorded NPC locations accessible to your faction, prioritizes the current zone, and places a map pin. If none are known in the current zone, it announces the closest known location on the same continent in chat and pins it. Hover over a Devitools-placed map pin to see the NPC name, service, and zone. Right-drag the button to move it; its position is saved per character. Searches work outside combat and replace your current user waypoint.
+
+The bundled data is an incomplete snapshot, not a live listing of every NPC. Some NPCs or zones may be absent, faction access and locations can change, and NPC names are currently in English. Trainer skill levels and reagent stock are not checked, so a nearby result may not teach the rank or sell the item you need. Distances are straight-line distances, not travel routes; different continents cannot be compared. A missing player position or an unsupported map pin is reported in chat. See [Data/NPC_SOURCES.md](Data/NPC_SOURCES.md) for the data sources and licenses.
+
 ## Development
 
-The addon loads `Devitools.lua` (core), `Data/SpellData.lua` (spell IDs and families), and `Modules/BuffReminder.lua` (the reminder tool and its settings) in the order listed in the TOC. WoW passes a shared addon namespace to each file.
+The addon loads `Devitools.lua` (core), `Data/SpellData.lua` (spell IDs and families), `Modules/BuffReminder.lua` (the reminder tool and its settings), `Data/ServiceNPCs.lua` (locator data), and `Modules/WhereIs.lua` (the locator tool) in the order listed in the TOC. WoW passes a shared addon namespace to each file.
 
 For linting, run `selene .` from the project directory. `selene.toml` selects `wow.yml`, a Lua 5.1 standard library extended with the WoW APIs and saved variables currently used by Devitools. Add new game globals to `wow.yml` as the addon grows; this keeps warnings for genuinely unknown names enabled.
+
+Run the locator checks with a Lua 5.1-compatible interpreter: `lua tests/WhereIs_test.lua`.

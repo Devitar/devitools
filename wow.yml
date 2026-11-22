@@ -47,3 +47,31 @@ globals:
     any: true
   DevitoolsCharacterDB:
     any: true
+  UnitFactionGroup:
+    any: true
+  CreateVector2D:
+    any: true
+  GameTooltip:
+    any: true
+  MenuUtil.CreateContextMenu:
+    any: true
+  UiMapPoint.CreateFromCoordinates:
+    any: true
+  Enum.UIMapType.Micro:
+    property: read-only
+  C_Map.GetMapInfo:
+    any: true
+  C_Map.GetBestMapForUnit:
+    any: true
+  C_Map.GetPlayerMapPosition:
+    any: true
+  C_Map.GetWorldPosFromMapPos:
+    any: true
+  C_Map.CanSetUserWaypointOnMap:
+    any: true
+  C_Map.SetUserWaypoint:
+    any: true
+  C_Map.GetUserWaypoint:
+    any: true
+  WaypointLocationPinMixin.CopySlashCommandToClipboard:
+    any: true
