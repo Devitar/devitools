@@ -9,6 +9,7 @@ Devitools.lua
 Data\SpellData.lua
 Modules\Settings.lua
 Modules\WeaponEnchants.lua
+Modules\TrackedBuffs.lua
 Modules\BuffReminder.lua
 
 Data\ServiceNPCs.lua

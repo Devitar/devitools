@@ -185,6 +185,9 @@ local function update()
     if ns.WeaponEnchants then
         ns.WeaponEnchants.AppendReminders(db, db.refresh, reminders)
     end
+    if ns.TrackedBuffs then
+        ns.TrackedBuffs.Append(db.trackedBuffs, active, db.refresh, reminders)
+    end
 
     if #reminders == 0 then frame:Hide(); return end
     for i, text in ipairs(reminders) do
@@ -226,6 +229,7 @@ events:SetScript("OnEvent", function(_, event, arg)
         characterDB = DevitoolsCharacterDB
         for key, value in pairs(defaults) do if db[key] == nil then db[key] = value end end
         if type(db.buffs) ~= "table" then db.buffs = {} end
+        if type(db.trackedBuffs) ~= "table" then db.trackedBuffs = {} end
         if type(db.refresh) ~= "number" then db.refresh = defaults.refresh end
         if type(db.position) == "table" and type(db.position[1]) == "string" and type(db.position[2]) == "string" and type(db.position[3]) == "number" and type(db.position[4]) == "number" then
             frame:ClearAllPoints()
@@ -458,7 +462,96 @@ if classImbue then
     end
     bottom = bottom - 90
 end
-panel:SetHeight(math.max(500, -bottom + 35))
+local consumableHeading = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+consumableHeading:SetPoint("TOPLEFT", 20, bottom - 15)
+consumableHeading:SetText("Manually tracked buffs")
+local consumableHint = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+consumableHint:SetPoint("TOPLEFT", consumableHeading, "BOTTOMLEFT", 0, -6)
+consumableHint:SetText("Select a buff you currently have to track it.")
+local consumableAdd = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
+consumableAdd:SetSize(160, 24)
+consumableAdd:SetPoint("TOPLEFT", 25, bottom - 65)
+consumableAdd:SetText("Track active buff")
+local consumableStatus = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+consumableStatus:SetPoint("TOPLEFT", 25, bottom - 95)
+local consumableRows = {}
+local function renderConsumables()
+    if not db then return end
+    for index, entry in ipairs(db.trackedBuffs) do
+        local rowIndex = index
+        local tracked = entry
+        local row = consumableRows[index]
+        if not row then
+            row = {}
+            row.box = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
+            row.box:SetPoint("TOPLEFT", 20, bottom - 120 - (index - 1) * 30)
+            row.label = row.box:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+            row.label:SetPoint("LEFT", row.box, "RIGHT", 2, 0)
+            row.label:SetWidth(360)
+            row.label:SetJustifyH("LEFT")
+            row.remove = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
+            row.remove:SetSize(65, 22)
+            row.remove:SetPoint("TOPLEFT", 455, bottom - 122 - (index - 1) * 30)
+            row.remove:SetText("Remove")
+            consumableRows[index] = row
+        end
+        row.label:SetText(tracked.name)
+        row.box:SetChecked(tracked.enabled ~= false)
+        row.box:SetScript("OnClick", function(self)
+            tracked.enabled = self:GetChecked() and true or false
+            update()
+        end)
+        row.remove:SetScript("OnClick", function()
+            table.remove(db.trackedBuffs, rowIndex)
+            renderConsumables()
+            update()
+        end)
+        row.box:Show()
+        row.label:Show()
+        row.remove:Show()
+    end
+    for index = #db.trackedBuffs + 1, #consumableRows do
+        consumableRows[index].box:Hide()
+        consumableRows[index].label:Hide()
+        consumableRows[index].remove:Hide()
+    end
+    panel:SetHeight(math.max(500, -bottom + 155 + #db.trackedBuffs * 30))
+end
+local function addConsumable(name)
+    local added, reason = ns.TrackedBuffs.Add(db.trackedBuffs, name)
+    if not added then
+        consumableStatus:SetText(reason)
+        return
+    end
+    consumableStatus:SetText("")
+    renderConsumables()
+    update()
+end
+consumableAdd:SetScript("OnClick", function(self)
+    if not C_UnitAuras or not C_UnitAuras.GetAuraDataByIndex then return end
+    local names, seen = {}, {}
+    for index = 1, 255 do
+        local aura = C_UnitAuras.GetAuraDataByIndex("player", index, "HELPFUL")
+        if not safe(aura) then break end
+        if not aura then break end
+        local name = aura.name
+        if safe(name) and type(name) == "string" and not seen[name] then
+            names[#names + 1] = name
+            seen[name] = true
+        end
+    end
+    table.sort(names)
+    MenuUtil.CreateContextMenu(self, function(_, menu)
+        menu:CreateTitle(#names > 0 and "Choose a buff to track" or "No readable active buffs")
+        for _, name in ipairs(names) do
+            local selected = name
+            menu:CreateButton(selected, function()
+                addConsumable(selected)
+            end)
+        end
+    end)
+end)
+panel:SetHeight(math.max(500, -bottom + 155))
 if count == 0 and playerClass ~= "WARLOCK" and playerClass ~= "MAGE" then
     local none = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     none:SetPoint("TOPLEFT", 25, -280)
@@ -469,6 +562,7 @@ refreshSettings = function()
     for _, control in ipairs(controls) do control.box:SetChecked(control.get()) end
     if timeBox:IsVisible() then timeBox:SetText(tostring(db.refresh)) end
     timeStatus:SetText("")
+    renderConsumables()
 end
 panel:SetScript("OnShow", refreshSettings)
 

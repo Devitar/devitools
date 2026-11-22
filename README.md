@@ -18,6 +18,8 @@ Optional main-hand and off-hand coating reminders track temporary weapon coating
 
 Related alternatives, such as mage armors and paladin blessings, share a reminder: any listed active alternative satisfies the group, and the reminder appears if at least one learned alternative is enabled. This avoids asking for mutually exclusive buffs at the same time.
 
+To track an elixir or another active player buff, open the Buff Reminder settings, scroll to **Manually tracked buffs**, and choose **Track active buff**. Each selected buff can be toggled or removed there. Manually tracked entries match the buff's displayed name, use the same expiration threshold, and apply across characters; select only effects you want to maintain.
+
 Well-Rested tracks the sleeping bag XP aura when present, missing, or nearing expiration; any number of stacks counts as active. The reminder works even if someone else provides the sleeping bag.
 
 The initial spell list covers common self buffs for druids, mages, priests, warlocks, warriors, paladins, and shamans. This is a starting list, not a complete catalog of every buff, and Forever-specific spell or aura changes may require adjustments after in-game testing. Reminders are informational and do not cast spells or check for food in your bags. See [BUFF_COVERAGE.md](BUFF_COVERAGE.md) for the class-by-class inventory, sources, and outstanding verification.

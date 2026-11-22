@@ -28,11 +28,22 @@ UIParent, ChatFontNormal = {}, {}
 UnitClass = function() return "Warlock", "WARLOCK" end
 UnitIsDeadOrGhost = function() return false end
 InCombatLockdown = function() return false end
-C_UnitAuras = { GetAuraDataByIndex = function() end }
+local activeName
+C_UnitAuras = { GetAuraDataByIndex = function(_, index)
+    if index == 1 and activeName then return { name = activeName, expirationTime = 0, spellId = 1 } end
+end }
+local currentMenu
+MenuUtil = { CreateContextMenu = function(owner, build)
+    currentMenu = { buttons = {} }
+    function currentMenu:CreateTitle() end
+    function currentMenu:CreateButton(label, callback) self.buttons[label] = callback end
+    build(owner, currentMenu)
+end }
 C_Spell = { GetSpellName = function(id)
     return ({ [132] = "Detect Invisibility", [5697] = "Unending Breath", [706] = "Demon Armor", [19028] = "Soul Link" })[id]
 end }
 local ns = { Settings = { RegisterPage = function() return CreateFrame("Frame") end } }
+assert(loadfile("Modules/TrackedBuffs.lua"))("Devitools", ns)
 assert(loadfile("Data/SpellData.lua"))("Devitools", ns)
 assert(loadfile("Modules/BuffReminder.lua"))("Devitools", ns)
 DevitoolsDB = { buffs = { [132] = true } }
@@ -61,6 +72,25 @@ assert(#mainHands == 2 and not rawget(mainHands[2], "checked"), "warlock stone r
 mainHands[2].checked = true
 mainHands[2].OnClick(mainHands[2])
 assert(DevitoolsDB.weaponImbueMainHand == true, "warlock stone reminder must save its own setting")
+local addButton
+for _, frame in ipairs(frames) do
+    if frame.kind == "Button" and rawget(frame, "text") == "Track active buff" then addButton = frame end
+end
+activeName = "Elixir of the Mongoose"
+addButton.OnClick(addButton)
+assert(currentMenu.buttons[activeName], "an active buff should be offered for tracking")
+currentMenu.buttons[activeName]()
+assert(#DevitoolsDB.trackedBuffs == 1 and DevitoolsDB.trackedBuffs[1].name == "Elixir of the Mongoose", "adding a consumable should save it")
+local remove, trackedBox
+for _, frame in ipairs(frames) do
+    if frame.kind == "Button" and rawget(frame, "text") == "Remove" then remove = frame end
+    if frame.kind == "CheckButton" and rawget(frame, "label") == activeName then trackedBox = frame end
+end
+trackedBox.checked = false
+trackedBox.OnClick(trackedBox)
+assert(DevitoolsDB.trackedBuffs[1].enabled == false, "a tracked buff should be toggleable")
+remove.OnClick(remove)
+assert(#DevitoolsDB.trackedBuffs == 0, "removing a consumable should remove its saved reminder")
 DevitoolsDB.buffs[132] = nil
 for _, frame in ipairs(frames) do
     if frame.kind == "Frame" and rawget(frame, "parent") and frame.parent.kind == "ScrollFrame" and rawget(frame, "OnShow") then
