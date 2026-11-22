@@ -59,4 +59,9 @@ coats[0] = {}
 settings.weaponMainHand = false
 r = reminders()
 assert(#r == 1 and r[1]:find("weapon imbue %(missing%)"), "shaman weapon imbues should be supported")
+class = "WARRIOR"
+assert(#reminders() == 0, "a warrior must not receive class-specific imbue reminders from shared settings")
+settings.weaponMainHand = true
+r = reminders()
+assert(#r == 1 and r[1]:find("Main%-hand coating %(missing%)"), "a warrior may still track general temporary coatings")
 io.write("WeaponEnchants tests passed\n")

@@ -68,6 +68,7 @@ local ns = { CollisionRouter = {
         return job
     end,
 } }
+assert(loadfile("Modules/WhereIsOptions.lua"))("Devitools", ns)
 assert(loadfile("Modules/WalkingRoute.lua"))("Devitools", ns)
 local route = ns.WalkingRoute
 activeWaypoint = { uiMapID = 1, position = { x = 100, y = 0 } }
@@ -120,4 +121,28 @@ route.Start(1, 100, 0)
 runTimers()
 assert(messages[#messages]:find("No walking route", 1, true), "missing routes should be reported")
 assert(not lines[1].shown, "missing road data must not draw a fake route")
+roadAvailable, playerX = true, 0
+local worldDraws, worldClears = 0, 0
+ns.WorldRouteMap = { Draw = function() worldDraws = worldDraws + 1 end, Clear = function() worldClears = worldClears + 1 end }
+local opts = ns.WhereIsOptions
+opts.Set("showMinimap", false)
+opts.Set("showWorldMap", true)
+opts.Set("autoClear", false)
+activeWaypoint = { uiMapID = 1, position = { x = 100, y = 0 } }
+route.Start(1, 100, 0)
+runTimers()
+frames[1].OnUpdate(frames[1], 0.2)
+assert(not lines[1].shown and worldDraws > 0, "minimap can be hidden while world map stays visible")
+opts.Set("showMinimap", true)
+opts.Set("showWorldMap", false)
+frames[1].OnUpdate(frames[1], 0.2)
+assert(lines[1].shown and worldClears > 0, "world map can be hidden while minimap stays visible")
+playerX = 99
+frames[1].OnUpdate(frames[1], 0.2)
+assert(activeWaypoint, "disabling arrival clearing must preserve a nearby pin")
+playerX = 96
+opts.Set("autoClear", true)
+opts.Set("arrivalDistance", 5)
+frames[1].OnUpdate(frames[1], 0.2)
+assert(not activeWaypoint, "the configured arrival distance must clear the pin")
 io.write("WalkingRoute tests passed\n")

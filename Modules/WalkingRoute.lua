@@ -1,23 +1,28 @@
 local _, ns = ...
 local router = ns.CollisionRouter
+local options = ns.WhereIsOptions
 local route = { points = nil, target = nil, generation = 0, elapsed = 0, lastPlan = 0, reported = false }
 local frame = CreateFrame("Frame", nil, Minimap)
 frame:SetAllPoints(Minimap)
 frame:SetFrameLevel(Minimap:GetFrameLevel() + 5)
 local lines = {}
-local arrivalDistanceSquared = 3 ^ 2
-
-local function clearLines()
+local function clearMinimapLines()
 	for _, line in ipairs(lines) do
 		line:Hide()
 	end
+end
+
+local function clearLines()
+	clearMinimapLines()
 	if ns.WorldRouteMap then
 		ns.WorldRouteMap.Clear()
 	end
 end
 
-local function message(text)
-	print("|cff66ccffDevitools:|r " .. text)
+local function message(text, important)
+	if important or options.Get("chatMessages") then
+		print("|cff66ccffDevitools:|r " .. text)
+	end
 end
 
 local function playerPosition()
@@ -74,7 +79,7 @@ local function plan()
 	end
 	if InCombatLockdown() then
 		if not route.reported then
-			message("Walking route will be calculated after combat.")
+			message("Walking route will be calculated after combat.", true)
 			route.reported = true
 		end
 		return
@@ -82,7 +87,7 @@ local function plan()
 	local continent, x, y = playerPosition()
 	if not continent or not x or not y then
 		if not route.reported then
-			message("Walking route unavailable: your world position could not be determined.")
+			message("Walking route unavailable: your world position could not be determined.", true)
 			route.reported = true
 		end
 		return
@@ -92,7 +97,7 @@ local function plan()
 		route.points = nil
 		clearLines()
 		if not route.reported then
-			message("Walking route unavailable across these maps; the map pin is still set.")
+			message("Walking route unavailable across these maps; the map pin is still set.", true)
 			route.reported = true
 		end
 		return
@@ -102,13 +107,13 @@ local function plan()
 		return
 	end
 	local distanceSquared = (dx - x) ^ 2 + (dy - y) ^ 2
-	if distanceSquared <= arrivalDistanceSquared then
+	if options.Get("autoClear") and distanceSquared <= options.Get("arrivalDistance") ^ 2 then
 		arrive()
 		return
 	end
 	if not router or not router.Available(continent) then
 		if not route.reported then
-			message("Walking map unavailable for this continent; the map pin is still set.")
+			message("Walking map unavailable for this continent; the map pin is still set.", true)
 			route.reported = true
 		end
 		return
@@ -129,14 +134,14 @@ local function plan()
 			route.points = nil
 			clearLines()
 			if not route.reported then
-				message("No walking route available for this destination; the map pin is still set.")
+				message("No walking route available for this destination; the map pin is still set.", true)
 				route.reported = true
 			end
 			return
 		end
 		route.points, route.continent, route.reported, route.direct = points, continent, false, false
 		if not route.announced then
-			message("Walking route ready; follow the cyan line on your minimap.")
+			message("Walking route ready.")
 			route.announced = true
 		end
 	end, { profile = UnitFactionGroup("player") })
@@ -279,15 +284,23 @@ frame:SetScript("OnUpdate", function(_, elapsed)
 		C_Map.GetWorldPosFromMapPos(route.target.map, CreateVector2D(route.target.x, route.target.y))
 	if targetPos and targetContinent == continent then
 		local dx, dy = targetPos:GetXY()
-		if dx and dy and (dx - x) ^ 2 + (dy - y) ^ 2 <= arrivalDistanceSquared then
+		if options.Get("autoClear") and dx and dy and (dx - x) ^ 2 + (dy - y) ^ 2 <= options.Get("arrivalDistance") ^ 2 then
 			arrive()
 			return
 		end
 	end
 	if route.points then
-		draw(continent, x, y)
+		if options.Get("showMinimap") then
+			draw(continent, x, y)
+		else
+			clearMinimapLines()
+		end
 		if ns.WorldRouteMap then
-			ns.WorldRouteMap.Draw(continent, remainingPoints(x, y))
+			if options.Get("showWorldMap") then
+				ns.WorldRouteMap.Draw(continent, remainingPoints(x, y))
+			else
+				ns.WorldRouteMap.Clear()
+			end
 		end
 		local deviation = distanceToRoute(x, y)
 		if deviation and deviation > 2500 and GetTime() - route.lastPlan >= 10 then

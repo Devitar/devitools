@@ -2,7 +2,7 @@
 local messages, waypoint = {}, nil
 local faction, currentMap, allowPin, setPin = "Alliance", 1, true, true
 local locatorButton, clearButton, openedMenu
-local routeStarts, routeStops = 0, 0
+local routeStarts, routeStops, drags = 0, 0, 0
 local eventFrames = {}
 local function fire(event)
     for _, frame in ipairs(eventFrames[event] or {}) do
@@ -64,6 +64,8 @@ frame.__index = function(self, name)
         return function(frameObject) frameObject.visible = false end
     elseif name == "SetScript" then
         return function(_, event, handler) self[event] = handler end
+    elseif name == "StartMoving" then
+        return function() drags = drags + 1 end
     end
     return function() end
 end
@@ -100,6 +102,7 @@ local ns = { WalkingRoute = {
     },
     flight = {},
 } }
+assert(loadfile("Modules/WhereIsOptions.lua"))("Devitools", ns)
 assert(loadfile("Modules/WhereIs.lua"))("Devitools", ns)
 assert(clearButton and not clearButton.visible, "clear button must start hidden")
 waypoint = { map = 1, x = 0.1, y = 0.2 }
@@ -181,6 +184,45 @@ assert(not waypoint and messages[#messages]:find("Could not place", 1, true), "m
 currentMap, messages = nil, {}
 find(category)
 assert(messages[#messages]:find("position is unavailable", 1, true), "must report unavailable player position")
+local opts = ns.WhereIsOptions
+opts.SetService("innkeeper", false)
+locatorButton.OnClick(locatorButton)
+assert(not openedMenu.buttons.Innkeeper and openedMenu.buttons["Flight Master"], "disabled services must be hidden from the menu")
+opts.SetService("profession_fishing", false)
+locatorButton.OnClick(locatorButton)
+assert(not openedMenu.buttons["Profession Trainer"].buttons.Fishing, "individual profession trainers can be hidden")
+opts.Set("lockButton", true)
+locatorButton.OnDragStart(locatorButton)
+assert(drags == 0, "locked button must not start moving")
+opts.Set("lockButton", false)
+locatorButton.OnDragStart(locatorButton)
+assert(drags == 1, "unlocked button should be movable")
+opts.Set("searchOtherZones", false)
+currentMap, messages, waypoint = 3, {}, nil
+find(category)
+assert(not waypoint and messages[#messages]:find("in this zone", 1, true), "zone-only searches must not pin outside the zone")
+opts.Set("searchOtherZones", true)
+opts.Set("chatMessages", false)
+currentMap, messages, waypoint, setPin = 1, {}, nil, true
+ns.ServiceNPCs.innkeeper[2].source = "Observed"
+find(category)
+assert(waypoint and #messages == 0, "routine pin messages should respect the chat setting")
+opts.Set("showSource", true)
+tooltipLines = {}
+GameTooltip.owner = { CopySlashCommandToClipboard = pinFunction }
+tooltipHook(GameTooltip)
+assert(tooltipLines[4] == "Location source: Observed", "the source option should add the saved location source")
+currentMap = nil
+find(category)
+assert(messages[#messages]:find("position is unavailable", 1, true), "errors must remain visible when routine chat is disabled")
+currentMap = 1
+opts.Set("allowClassic", false)
+ns.ServiceNPCs.innkeeper[2].source = "Classic"
+messages, waypoint = {}, nil
+find(category)
+assert(waypoint and waypoint.map == 2, "unverified Classic locations must be excluded when disabled")
+opts.Set("allowClassic", true)
+opts.Set("chatMessages", true)
 -- Regression: the Grom'gol innkeeper must be in the shipped faction data.
 local actualData = {}
 assert(loadfile("Data/ServiceNPCs.lua"))("Devitools", actualData)
@@ -192,7 +234,7 @@ for _, npc in ipairs(actualData.ServiceNPCs.repair) do
     if npc.source == "Classic" then classic = npc; break end
 end
 assert(classic, "expanded data must include labeled Classic fallback positions")
-local fallbackNS = { ServiceNPCs = { repair = { classic } } }
+local fallbackNS = { ServiceNPCs = { repair = { classic } }, WhereIsOptions = ns.WhereIsOptions }
 assert(loadfile("Modules/WhereIs.lua"))("Devitools", fallbackNS)
 faction = classic.faction:find("A", 1, true) and "Alliance" or "Horde"
 currentMap, messages, waypoint = classic.map, {}, nil

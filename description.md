@@ -7,7 +7,7 @@ Devitools helps you keep track of buffs and find useful NPCs without interruptin
 Keep an eye on your buffs with a movable reminder window. Devitools reminds you when a supported buff you've learned is missing or about to expire. Missing buffs appear in red and expiring buffs appear in yellow.
 
 - Choose which buffs you want to track and how far in advance you want to be warned. The default warning time is five minutes.
-- Track **Well Fed** and the **Well-Rested** buff from the Cozy Sleeping Bag; both are enabled by default.
+- Optionally track **Well Fed** and the **Well-Rested** buff from the Cozy Sleeping Bag; both are off by default.
 - Enable situational reminders, such as Detect Invisibility and Unending Breath, separately. These default off.
 - Move or lock the reminder window to fit your UI. It hides during combat and when there are no reminders to show.
 

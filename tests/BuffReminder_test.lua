@@ -1,5 +1,6 @@
 -- Run with a Lua 5.1-compatible interpreter from the project root.
 local frames, events = {}, {}
+local reminderFrame
 local methods = {}
 methods.__index = function(_, key)
     return methods[key] or function() end
@@ -15,13 +16,21 @@ function methods:SetText(text)
     if self.parent and self.parent.kind == "CheckButton" then self.parent.label = text end
 end
 function methods:GetText() return self.text or "" end
+function methods:SetPoint(point, ...)
+    if point == "TOPLEFT" then self.top = select(2, ...) end
+end
+function methods:SetHeight(value) self.height = value end
+function methods:GetStringHeight()
+    return type(self.text) == "string" and self.text:find("Firestone", 1, true) and 32 or 14
+end
 function methods:SetChecked(value) self.checked = value end
 function methods:GetChecked() return self.checked end
 function methods:IsShown() return true end
 function methods:IsVisible() return true end
-CreateFrame = function(kind, _, parent)
+CreateFrame = function(kind, name, parent)
     local frame = setmetatable({ kind = kind, parent = parent }, methods)
     frames[#frames + 1] = frame
+    if name == "DevitoolsReminderFrame" then reminderFrame = frame end
     return frame
 end
 UIParent, ChatFontNormal = {}, {}
@@ -43,12 +52,20 @@ C_Spell = { GetSpellName = function(id)
     return ({ [132] = "Detect Invisibility", [5697] = "Unending Breath", [706] = "Demon Armor", [19028] = "Soul Link" })[id]
 end }
 local ns = { Settings = { RegisterPage = function() return CreateFrame("Frame") end } }
+ns.WeaponEnchants = { AppendReminders = function(settings, _, reminders)
+    if settings.testLong then
+        reminders[#reminders + 1] = "Main-hand Firestone/Spellstone (missing)"
+        reminders[#reminders + 1] = "Next reminder (missing)"
+    end
+end }
 assert(loadfile("Modules/TrackedBuffs.lua"))("Devitools", ns)
 assert(loadfile("Data/SpellData.lua"))("Devitools", ns)
 assert(loadfile("Modules/BuffReminder.lua"))("Devitools", ns)
 DevitoolsDB = { buffs = { [132] = true } }
 DevitoolsCharacterDB = {}
 events.ADDON_LOADED.OnEvent(events.ADDON_LOADED, "ADDON_LOADED", "Devitools")
+assert(DevitoolsDB.wellFed == false and DevitoolsDB.wellRested == false,
+    "Well Fed and Well-Rested must default off")
 for _, frame in ipairs(frames) do
     if frame.kind == "Frame" and rawget(frame, "parent") and frame.parent.kind == "ScrollFrame" and rawget(frame, "OnShow") then
         frame.OnShow(frame)
@@ -72,15 +89,29 @@ assert(#mainHands == 2 and not rawget(mainHands[2], "checked"), "warlock stone r
 mainHands[2].checked = true
 mainHands[2].OnClick(mainHands[2])
 assert(DevitoolsDB.weaponImbueMainHand == true, "warlock stone reminder must save its own setting")
+DevitoolsDB.testLong, DevitoolsDB.wellFed, DevitoolsDB.wellRested = true, false, false
+mainHands[1].OnClick(mainHands[1])
+assert(reminderFrame.rows[1].top == -24 and reminderFrame.rows[2].top == -59,
+    "a wrapped reminder must move the following row down by its measured height")
+assert(reminderFrame.height >= 85, "the reminder window must grow to contain wrapped rows")
+DevitoolsDB.testLong = false
 local addButton
 for _, frame in ipairs(frames) do
     if frame.kind == "Button" and rawget(frame, "text") == "Track active buff" then addButton = frame end
 end
+activeName = "Demon Armor"
+addButton.OnClick(addButton)
+assert(not currentMenu.buttons[activeName], "class buffs already covered by settings must be excluded")
+activeName = "Well Fed"
+addButton.OnClick(addButton)
+assert(not currentMenu.buttons[activeName], "built-in food buffs must be excluded")
 activeName = "Elixir of the Mongoose"
 addButton.OnClick(addButton)
 assert(currentMenu.buttons[activeName], "an active buff should be offered for tracking")
 currentMenu.buttons[activeName]()
-assert(#DevitoolsDB.trackedBuffs == 1 and DevitoolsDB.trackedBuffs[1].name == "Elixir of the Mongoose", "adding a consumable should save it")
+assert(#DevitoolsCharacterDB.trackedBuffs == 1 and DevitoolsCharacterDB.trackedBuffs[1].name == "Elixir of the Mongoose", "adding a consumable should save it per character")
+addButton.OnClick(addButton)
+assert(not currentMenu.buttons[activeName], "already manually tracked buffs must be excluded")
 local remove, trackedBox
 for _, frame in ipairs(frames) do
     if frame.kind == "Button" and rawget(frame, "text") == "Remove" then remove = frame end
@@ -88,9 +119,9 @@ for _, frame in ipairs(frames) do
 end
 trackedBox.checked = false
 trackedBox.OnClick(trackedBox)
-assert(DevitoolsDB.trackedBuffs[1].enabled == false, "a tracked buff should be toggleable")
+assert(DevitoolsCharacterDB.trackedBuffs[1].enabled == false, "a tracked buff should be toggleable")
 remove.OnClick(remove)
-assert(#DevitoolsDB.trackedBuffs == 0, "removing a consumable should remove its saved reminder")
+assert(#DevitoolsCharacterDB.trackedBuffs == 0, "removing a consumable should remove its saved reminder")
 DevitoolsDB.buffs[132] = nil
 for _, frame in ipairs(frames) do
     if frame.kind == "Frame" and rawget(frame, "parent") and frame.parent.kind == "ScrollFrame" and rawget(frame, "OnShow") then
@@ -102,4 +133,18 @@ local breath = byLabel["Unending Breath"]
 breath.checked = true
 breath.OnClick(breath)
 assert(DevitoolsDB.buffs[5697] == true, "enabling a utility buff must save the choice")
+DevitoolsDB.trackedBuffs = { { name = "Elixir", enabled = false } }
+DevitoolsCharacterDB = {}
+events.ADDON_LOADED.OnEvent(events.ADDON_LOADED, "ADDON_LOADED", "Devitools")
+local main = DevitoolsCharacterDB
+assert(main.trackedBuffs[1].name == "Elixir" and main.trackedBuffs[1].enabled == false, "old shared settings should migrate")
+main.trackedBuffs[1].enabled = true
+DevitoolsCharacterDB = {}
+events.ADDON_LOADED.OnEvent(events.ADDON_LOADED, "ADDON_LOADED", "Devitools")
+assert(DevitoolsCharacterDB.trackedBuffs[1].enabled == false, "each character must receive an independent copy")
+table.remove(DevitoolsCharacterDB.trackedBuffs, 1)
+assert(#main.trackedBuffs == 1 and main.trackedBuffs[1].enabled, "removing an alt's buff must not change the main's")
+DevitoolsDB.wellFed, DevitoolsDB.wellRested = true, true
+events.ADDON_LOADED.OnEvent(events.ADDON_LOADED, "ADDON_LOADED", "Devitools")
+assert(DevitoolsDB.wellFed and DevitoolsDB.wellRested, "existing enabled choices must be preserved")
 io.write("BuffReminder tests passed\n")

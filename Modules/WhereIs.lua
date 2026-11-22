@@ -1,4 +1,5 @@
 local addonName, ns = ...
+local options = ns.WhereIsOptions
 local categories = {
     { key = "innkeeper", label = "Innkeeper" },
     { key = "flight", label = "Flight Master" },
@@ -23,8 +24,10 @@ local professions = {
     { key = "fishing", label = "Fishing" },
 }
 
-local function message(text)
-    print("|cff66ccffDevitools:|r " .. text)
+local function message(text, important)
+    if important or options.Get("chatMessages") then
+        print("|cff66ccffDevitools:|r " .. text)
+    end
 end
 
 local function isEnabled()
@@ -49,31 +52,31 @@ end
 local function findNearest(category)
     if not isEnabled() then return end
     if InCombatLockdown() then
-        message("Please search outside combat.")
+        message("Please search outside combat.", true)
         return
     end
     local faction = UnitFactionGroup("player")
     local factionCode = faction == "Alliance" and "A" or faction == "Horde" and "H"
     if not factionCode then
-        message("Your faction is not available yet. Please try again.")
+        message("Your faction is not available yet. Please try again.", true)
         return
     end
     local mapID = C_Map.GetBestMapForUnit("player")
     local position = mapID and C_Map.GetPlayerMapPosition(mapID, "player")
     if not position then
-        message("Your current map position is unavailable here.")
+        message("Your current map position is unavailable here.", true)
         return
     end
     local continent, playerWorld = C_Map.GetWorldPosFromMapPos(mapID, position)
     if not continent or not playerWorld then
-        message("Your world position is unavailable here.")
+        message("Your world position is unavailable here.", true)
         return
     end
     local px, py = playerWorld:GetXY()
     local playerZone = zoneMap(mapID)
     local inZone, elsewhere
     for _, npc in ipairs(ns.ServiceNPCs[category.key] or {}) do
-        if npc.faction:find(factionCode, 1, true) then
+        if npc.faction:find(factionCode, 1, true) and (options.Get("allowClassic") or npc.source ~= "Classic") then
             local worldID, world = C_Map.GetWorldPosFromMapPos(npc.map, CreateVector2D(npc.x, npc.y))
             if worldID == continent and world then
                 local x, y = world:GetXY()
@@ -88,24 +91,28 @@ local function findNearest(category)
             end
         end
     end
-    local result = inZone or elsewhere
+    local result = inZone or (options.Get("searchOtherZones") and elsewhere)
     if not result then
-        message("No known " .. category.label .. " was found on your current continent.")
+        if not options.Get("searchOtherZones") then
+            message("No known " .. category.label .. " was found in this zone.", true)
+        else
+            message("No known " .. category.label .. " was found on your current continent.", true)
+        end
         return
     end
     local npc = result.npc
     local info = C_Map.GetMapInfo(npc.map)
     local zoneName = info and info.name or ("map " .. npc.map)
     if not inZone then
-        message("No known " .. category.label .. " in this zone. The nearest known one is in " .. zoneName .. ".")
+        message("No known " .. category.label .. " in this zone. The nearest known one is in " .. zoneName .. ".", true)
     end
     if not C_Map.CanSetUserWaypointOnMap(npc.map) then
-        message("Cannot place a map pin in " .. zoneName .. ".")
+        message("Cannot place a map pin in " .. zoneName .. ".", true)
         return
     end
     local point = UiMapPoint.CreateFromCoordinates(npc.map, npc.x, npc.y)
     if not C_Map.SetUserWaypoint(point) then
-        message("Could not place the map pin. Please try again outside combat.")
+        message("Could not place the map pin. Please try again outside combat.", true)
         return
     end
     if type(DevitoolsCharacterDB) == "table" then
@@ -118,10 +125,10 @@ local function findNearest(category)
     if ns.WalkingRoute then
         ns.WalkingRoute.Start(npc.map, npc.x, npc.y)
     else
-        message("Walking route module did not load; the map pin is still set.")
+        message("Walking route module did not load; the map pin is still set.", true)
     end
     if npc.source == "Classic" then
-        message("This location comes from Classic data and has not been verified in Forever.")
+        message("This location comes from Classic data and has not been verified in Forever.", true)
     end
 end
 
@@ -148,6 +155,9 @@ GameTooltip:HookScript("OnShow", function(tooltip)
     tooltip:AddLine(" ")
     tooltip:AddLine(saved.name, 1, 0.82, 0)
     tooltip:AddLine(saved.service .. " - " .. saved.zone, 1, 1, 1)
+    if options.Get("showSource") and type(saved.source) == "string" then
+        tooltip:AddLine("Location source: " .. saved.source, 1, 1, 1)
+    end
     if saved.source == "Classic" then
         tooltip:AddLine("Classic location; not verified in Forever", 1, 0.82, 0, true)
     end
@@ -205,7 +215,7 @@ waypointEvents:SetScript("OnEvent", function(_, event)
     end
 end)
 button:SetScript("OnDragStart", function(self)
-    if not InCombatLockdown() then
+    if not InCombatLockdown() and not options.Get("lockButton") then
         self:StartMoving()
     end
 end)
@@ -221,23 +231,30 @@ button:SetScript("OnClick", function(self)
         menu:CreateTitle("Where is...")
         for _, category in ipairs(categories) do
             local selected = category
-            menu:CreateButton(selected.label, function()
-                findNearest(selected)
-            end)
+            if options.ServiceEnabled(selected.key) then
+                menu:CreateButton(selected.label, function()
+                    findNearest(selected)
+                end)
+            end
         end
         local className, classToken = UnitClass("player")
-        if className and classToken then
+        if className and classToken and options.ServiceEnabled("class_trainer") then
             local trainer = { key = "trainer_class_" .. classToken:lower(), label = className .. " Trainer" }
             menu:CreateButton(trainer.label, function()
                 findNearest(trainer)
             end)
         end
-        local professionMenu = menu:CreateButton("Profession Trainer")
+        local professionMenu
         for _, profession in ipairs(professions) do
-            local trainer = { key = "trainer_profession_" .. profession.key, label = profession.label .. " Trainer" }
-            professionMenu:CreateButton(profession.label, function()
-                findNearest(trainer)
-            end)
+            if options.ServiceEnabled("profession_" .. profession.key) then
+                if not professionMenu then
+                    professionMenu = menu:CreateButton("Profession Trainer")
+                end
+                local trainer = { key = "trainer_profession_" .. profession.key, label = profession.label .. " Trainer" }
+                professionMenu:CreateButton(profession.label, function()
+                    findNearest(trainer)
+                end)
+            end
         end
     end)
 end)
@@ -309,22 +326,142 @@ end
 
 if ns.Settings then
     local panel = ns.Settings.RegisterPage("Where is...")
-    local heading = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+    local scroll = CreateFrame("ScrollFrame", nil, panel, "UIPanelScrollFrameTemplate")
+    scroll:SetPoint("TOPLEFT", panel, "TOPLEFT", 0, 0)
+    scroll:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", -26, 0)
+    local content = CreateFrame("Frame", nil, scroll)
+    content:SetSize(560, 1000)
+    scroll:SetScrollChild(content)
+    local heading = content:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
     heading:SetPoint("TOPLEFT", 20, -20)
     heading:SetText("Where is...")
-    local description = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    local description = content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
     description:SetPoint("TOPLEFT", heading, "BOTTOMLEFT", 0, -8)
     description:SetText("Find nearby services and show a walking route.")
-    local toggle = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
-    toggle:SetPoint("TOPLEFT", 20, -72)
-    local label = toggle:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    label:SetPoint("LEFT", toggle, "RIGHT", 2, 0)
-    label:SetText("Enable Where is...")
-    toggle:SetScript("OnClick", function(self)
-        setEnabled(self:GetChecked() and true or false)
+    local controls = {}
+    local function checkbox(label, x, y, getValue, setValue)
+        local box = CreateFrame("CheckButton", nil, content, "UICheckButtonTemplate")
+        box:SetPoint("TOPLEFT", x, y)
+        local text = box:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+        text:SetPoint("LEFT", box, "RIGHT", 2, 0)
+        text:SetText(label)
+        box:SetScript("OnClick", function(self)
+            setValue(self:GetChecked() and true or false)
+        end)
+        controls[#controls + 1] = { box = box, get = getValue }
+    end
+    local function option(label, x, y, key)
+        checkbox(label, x, y, function() return options.Get(key) end, function(value)
+            options.Set(key, value)
+        end)
+    end
+    local function section(label, y)
+        local text = content:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+        text:SetPoint("TOPLEFT", 20, y)
+        text:SetText(label)
+    end
+    checkbox("Enable Where is...", 20, -72, isEnabled, setEnabled)
+    section("Route display", -110)
+    option("Show minimap route", 20, -130, "showMinimap")
+    option("Show world map route", 280, -130, "showWorldMap")
+    section("Arrival", -170)
+    option("Clear pin automatically", 20, -190, "autoClear")
+    local distanceLabel = content:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    distanceLabel:SetPoint("TOPLEFT", 25, -230)
+    distanceLabel:SetText("Arrival distance (yards, 1-100):")
+    local distance = CreateFrame("EditBox", nil, content, "InputBoxTemplate")
+    distance:SetSize(55, 24)
+    distance:SetPoint("LEFT", distanceLabel, "RIGHT", 12, 0)
+    distance:SetAutoFocus(false)
+    distance:SetFontObject(ChatFontNormal)
+    distance:SetTextInsets(5, 5, 0, 0)
+    distance:SetMaxLetters(3)
+    local distanceDisplay = distance:CreateFontString(nil, "OVERLAY", "ChatFontNormal")
+    distanceDisplay:SetPoint("LEFT", 5, 0)
+    distanceDisplay:SetText(tostring(options.Get("arrivalDistance")))
+    distance:SetTextColor(1, 1, 1, 0)
+    distance:HookScript("OnTextChanged", function(self)
+        distanceDisplay:SetText(self:GetText())
     end)
+    distance:HookScript("OnEditFocusGained", function(self)
+        distanceDisplay:Hide()
+        self:SetTextColor(1, 1, 1, 1)
+    end)
+    distance:HookScript("OnEditFocusLost", function(self)
+        self:SetTextColor(1, 1, 1, 0)
+        distanceDisplay:SetText(self:GetText())
+        distanceDisplay:Show()
+    end)
+    local distanceApply = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")
+    distanceApply:SetSize(65, 24)
+    distanceApply:SetPoint("LEFT", distance, "RIGHT", 10, 0)
+    distanceApply:SetText("Apply")
+    local distanceStatus = content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    distanceStatus:SetPoint("TOPLEFT", distanceLabel, "BOTTOMLEFT", 0, -7)
+    local function applyDistance()
+        local value = tonumber(distance:GetText())
+        if not value or value % 1 ~= 0 or value < 1 or value > 100 then
+            distanceStatus:SetText("Enter a whole number from 1 to 100.")
+            return
+        end
+        options.Set("arrivalDistance", value)
+        distanceStatus:SetText("Arrival distance saved.")
+        distance:ClearFocus()
+    end
+    distanceApply:SetScript("OnClick", applyDistance)
+    distance:SetScript("OnEnterPressed", applyDistance)
+    distance:SetScript("OnEscapePressed", function(self)
+        self:SetText(tostring(options.Get("arrivalDistance")))
+        self:ClearFocus()
+    end)
+    section("Button", -280)
+    option("Lock button position", 20, -300, "lockButton")
+    local reset = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")
+    reset:SetSize(145, 24)
+    reset:SetPoint("TOPLEFT", 280, -304)
+    reset:SetText("Reset position")
+    reset:SetScript("OnClick", function()
+        if InCombatLockdown() then
+            message("Please move the button outside combat.", true)
+            return
+        end
+        if type(DevitoolsCharacterDB) == "table" then
+            DevitoolsCharacterDB.whereIsPosition = nil
+        end
+        button:ClearAllPoints()
+        button:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 25, -250)
+    end)
+    section("Search and messages", -345)
+    option("Search other zones when needed", 20, -365, "searchOtherZones")
+    option("Include unverified Classic locations", 20, -395, "allowClassic")
+    option("Show location source in pin tooltip", 20, -425, "showSource")
+    option("Show routine messages in chat", 20, -455, "chatMessages")
+    local serviceTop = -510
+    section("Services shown in the menu", serviceTop)
+    local serviceList = {}
+    for _, category in ipairs(categories) do
+        serviceList[#serviceList + 1] = { key = category.key, label = category.label }
+    end
+    serviceList[#serviceList + 1] = { key = "class_trainer", label = "Your class trainer" }
+    for _, profession in ipairs(professions) do
+        serviceList[#serviceList + 1] = { key = "profession_" .. profession.key, label = profession.label .. " trainer" }
+    end
+    for index, item in ipairs(serviceList) do
+        local key = item.key
+        local column, row = (index - 1) % 2, math.floor((index - 1) / 2)
+        checkbox(item.label, 20 + column * 260, serviceTop - 25 - row * 30,
+            function() return options.ServiceEnabled(key) end, function(value)
+                options.SetService(key, value)
+            end)
+    end
+    content:SetHeight(-serviceTop + 65 + math.ceil(#serviceList / 2) * 30)
     refreshToggle = function()
-        toggle:SetChecked(isEnabled())
+        for _, control in ipairs(controls) do
+            control.box:SetChecked(control.get())
+        end
+        if not distance:HasFocus() then
+            distance:SetText(tostring(options.Get("arrivalDistance")))
+        end
     end
     panel:SetScript("OnShow", refreshToggle)
 end

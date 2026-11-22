@@ -12,7 +12,7 @@ for _, families in pairs(buffs) do
     end
 end
 
-local defaults = { wellFed = true, wellRested = true, enabled = true, locked = false, refresh = 300 }
+local defaults = { wellFed = false, wellRested = false, enabled = true, locked = false, refresh = 300 }
 local db
 local characterDB
 local spellbookReady = false
@@ -186,23 +186,30 @@ local function update()
         ns.WeaponEnchants.AppendReminders(db, db.refresh, reminders)
     end
     if ns.TrackedBuffs then
-        ns.TrackedBuffs.Append(db.trackedBuffs, active, db.refresh, reminders)
+        ns.TrackedBuffs.Append(characterDB.trackedBuffs, active, db.refresh, reminders)
     end
 
     if #reminders == 0 then frame:Hide(); return end
+    local offset = 24
     for i, text in ipairs(reminders) do
         if not frame.rows[i] then
             local row = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-            row:SetPoint("TOPLEFT", 14, -24 - (i - 1) * 18)
-            row:SetPoint("RIGHT", -14, 0)
+            row:SetWidth(212)
             row:SetJustifyH("LEFT")
+            row:SetWordWrap(true)
             frame.rows[i] = row
         end
-        frame.rows[i]:SetText(text)
-        frame.rows[i]:Show()
+        local row = frame.rows[i]
+        row:ClearAllPoints()
+        row:SetPoint("TOPLEFT", 14, -offset)
+        row:SetText(text)
+        row:Show()
+        local height = row:GetStringHeight()
+        if not safe(height) or type(height) ~= "number" then height = 0 end
+        offset = offset + math.max(18, math.ceil(height) + 3)
     end
     for i = #reminders + 1, #frame.rows do frame.rows[i]:Hide() end
-    frame:SetHeight(32 + #reminders * 18)
+    frame:SetHeight(offset + 8)
     frame:Show()
 end
 
@@ -229,7 +236,18 @@ events:SetScript("OnEvent", function(_, event, arg)
         characterDB = DevitoolsCharacterDB
         for key, value in pairs(defaults) do if db[key] == nil then db[key] = value end end
         if type(db.buffs) ~= "table" then db.buffs = {} end
-        if type(db.trackedBuffs) ~= "table" then db.trackedBuffs = {} end
+        -- Copy the old account-wide list once per character; leave it in place
+        -- until every character has had a chance to migrate its own copy.
+        if type(characterDB.trackedBuffs) ~= "table" then
+            characterDB.trackedBuffs = {}
+            if type(db.trackedBuffs) == "table" then
+                for _, entry in ipairs(db.trackedBuffs) do
+                    if type(entry) == "table" and type(entry.name) == "string" then
+                        table.insert(characterDB.trackedBuffs, { name = entry.name, enabled = entry.enabled ~= false })
+                    end
+                end
+            end
+        end
         if type(db.refresh) ~= "number" then db.refresh = defaults.refresh end
         if type(db.position) == "table" and type(db.position[1]) == "string" and type(db.position[2]) == "string" and type(db.position[3]) == "number" and type(db.position[4]) == "number" then
             frame:ClearAllPoints()
@@ -477,7 +495,7 @@ consumableStatus:SetPoint("TOPLEFT", 25, bottom - 95)
 local consumableRows = {}
 local function renderConsumables()
     if not db then return end
-    for index, entry in ipairs(db.trackedBuffs) do
+    for index, entry in ipairs(characterDB.trackedBuffs) do
         local rowIndex = index
         local tracked = entry
         local row = consumableRows[index]
@@ -502,7 +520,7 @@ local function renderConsumables()
             update()
         end)
         row.remove:SetScript("OnClick", function()
-            table.remove(db.trackedBuffs, rowIndex)
+            table.remove(characterDB.trackedBuffs, rowIndex)
             renderConsumables()
             update()
         end)
@@ -510,15 +528,15 @@ local function renderConsumables()
         row.label:Show()
         row.remove:Show()
     end
-    for index = #db.trackedBuffs + 1, #consumableRows do
+    for index = #characterDB.trackedBuffs + 1, #consumableRows do
         consumableRows[index].box:Hide()
         consumableRows[index].label:Hide()
         consumableRows[index].remove:Hide()
     end
-    panel:SetHeight(math.max(500, -bottom + 155 + #db.trackedBuffs * 30))
+    panel:SetHeight(math.max(500, -bottom + 155 + #characterDB.trackedBuffs * 30))
 end
 local function addConsumable(name)
-    local added, reason = ns.TrackedBuffs.Add(db.trackedBuffs, name)
+    local added, reason = ns.TrackedBuffs.Add(characterDB.trackedBuffs, name)
     if not added then
         consumableStatus:SetText(reason)
         return
@@ -529,13 +547,39 @@ local function addConsumable(name)
 end
 consumableAdd:SetScript("OnClick", function(self)
     if not C_UnitAuras or not C_UnitAuras.GetAuraDataByIndex then return end
-    local names, seen = {}, {}
+    local names, seen, coveredIDs, coveredNames = {}, {}, {}, {}
+    local function cover(id, fallback)
+        coveredIDs[id] = true
+        local name = spellName(id)
+        if not safe(name) then return end
+        name = name or fallback
+        if type(name) == "string" then
+            coveredNames[name] = true
+        end
+    end
+    cover(spells.wellFed, "Well Fed")
+    cover(spells.wellRested, "Well-Rested")
+    for _, family in ipairs(buffs[playerClass] or {}) do
+        for _, id in ipairs(family.spells) do
+            cover(id)
+        end
+        for _, id in ipairs(family.auraIDs or {}) do
+            cover(id)
+        end
+    end
+    for _, tracked in ipairs(characterDB.trackedBuffs) do
+        if type(tracked.name) == "string" then
+            coveredNames[tracked.name] = true
+        end
+    end
     for index = 1, 255 do
         local aura = C_UnitAuras.GetAuraDataByIndex("player", index, "HELPFUL")
         if not safe(aura) then break end
         if not aura then break end
         local name = aura.name
-        if safe(name) and type(name) == "string" and not seen[name] then
+        local id = aura.spellId
+        if safe(name) and type(name) == "string" and safe(id) and not coveredIDs[id]
+            and not coveredNames[name] and not seen[name] then
             names[#names + 1] = name
             seen[name] = true
         end

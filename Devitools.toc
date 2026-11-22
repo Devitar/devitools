@@ -19,6 +19,7 @@ Vendor\PolestarNav\Routing\PathGrid.lua
 Vendor\PolestarNav\Routing\Path.lua
 Vendor\PolestarNav\Routing\PathJobs.lua
 Vendor\PolestarNav\API.lua
+Modules\WhereIsOptions.lua
 Modules\WorldRouteMap.lua
 Modules\WalkingRoute.lua
 Modules\WhereIs.lua

@@ -30,7 +30,7 @@ Last reviewed: 2026-11-21. This is a working inventory, not a claim that every p
 | Warlock | Firestone / Spellstone | [x] Optional main-hand imbue reminder. Blizzard says both stones apply weapon imbues alongside oils; verify the reported enchant type and expiration in game. |
 | Warrior | Battle Shout (6673) | [x] Included. Verify ranks and whether a five-minute warning is appropriate for a short-duration shout. |
 | Warrior | Stances and other shouts | [ ] Candidates: inspect Forever's spellbook, stance API, exclusivity, and desired short-buff behavior. |
-| All | Well Fed (19705 and other same-named auras) | [x] Included, enabled by default. Verify different food effects and localization; food effects with different names may be missed. |
+| All | Well Fed (19705 and other same-named auras) | [x] Included, off by default. Verify different food effects and localization; food effects with different names may be missed. |
 | All | Sharpening stones, weightstones and oils | [x] Optional per-hand temporary coating reminders, independent of class imbues; verify in game. |
 
 ## Known implementation gaps
