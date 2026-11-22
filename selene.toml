@@ -1,1 +1,2 @@
 std = "wow"
+exclude = ["Vendor/**", "tests/**"]

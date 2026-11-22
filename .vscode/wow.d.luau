@@ -24,3 +24,10 @@ declare MenuUtil: any
 declare UiMapPoint: any
 declare C_Map: any
 declare WaypointLocationPinMixin: any
+declare Minimap: any
+declare WorldMapFrame: any
+declare OpenMapAPI: any
+declare IsIndoors: any
+declare GetCVar: any
+declare GetPlayerFacing: any
+declare C_Timer: any

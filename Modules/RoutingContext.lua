@@ -1,0 +1,3 @@
+-- Keep the bundled road engine's state separate from the addon namespace.
+local _, ns = ...
+ns.WalkingRoadContext = { RULESET = "forever" }

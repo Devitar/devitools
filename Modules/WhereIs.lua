@@ -110,6 +110,11 @@ local function findNearest(category)
         }
     end
     message("Pinned " .. npc.name .. " in " .. zoneName .. ".")
+    if ns.WalkingRoute then
+        ns.WalkingRoute.Start(npc.map, npc.x, npc.y)
+    else
+        message("Walking route module did not load; the map pin is still set.")
+    end
     if npc.source == "Classic" then
         message("This location comes from Classic data and has not been verified in Forever.")
     end
@@ -131,7 +136,7 @@ GameTooltip:HookScript("OnShow", function(tooltip)
         or type(saved.name) ~= "string" or type(saved.service) ~= "string" or type(saved.zone) ~= "string" then
         return
     end
-    local x, y = current.position:GetXY()
+    local x, y = current.position.x, current.position.y
     if not x or not y or math.abs(x - saved.x) > 0.00001 or math.abs(y - saved.y) > 0.00001 then
         return
     end
@@ -164,6 +169,9 @@ local function updateClearButton()
     end
 end
 clearButton:SetScript("OnClick", function()
+    if ns.WalkingRoute then
+        ns.WalkingRoute.Stop()
+    end
     C_Map.ClearUserWaypoint()
     if type(DevitoolsCharacterDB) == "table" then
         DevitoolsCharacterDB.whereIsWaypoint = nil
@@ -173,7 +181,19 @@ end)
 local waypointEvents = CreateFrame("Frame")
 waypointEvents:RegisterEvent("PLAYER_ENTERING_WORLD")
 waypointEvents:RegisterEvent("USER_WAYPOINT_UPDATED")
-waypointEvents:SetScript("OnEvent", updateClearButton)
+waypointEvents:SetScript("OnEvent", function(_, event)
+    updateClearButton()
+    if event ~= "PLAYER_ENTERING_WORLD" or not ns.WalkingRoute then return end
+    local saved = type(DevitoolsCharacterDB) == "table" and DevitoolsCharacterDB.whereIsWaypoint
+    local current = C_Map.GetUserWaypoint()
+    local position = current and current.position
+    if type(saved) == "table" and type(saved.map) == "number" and type(saved.x) == "number"
+        and type(saved.y) == "number" and current and current.uiMapID == saved.map and position
+        and type(position.x) == "number" and type(position.y) == "number"
+        and math.abs(position.x - saved.x) < 0.00001 and math.abs(position.y - saved.y) < 0.00001 then
+        ns.WalkingRoute.Start(saved.map, saved.x, saved.y)
+    end
+end)
 button:SetScript("OnDragStart", function(self)
     if not InCombatLockdown() then
         self:StartMoving()

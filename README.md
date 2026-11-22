@@ -24,12 +24,17 @@ The initial spell list covers common self buffs for druids, mages, priests, warl
 
 Click the **Where is...** button to find an innkeeper, flight master, repair vendor, banker, auctioneer, stable master, reagent vendor, your class trainer, or a trainer for a selected profession. The tool searches recorded NPC locations accessible to your faction, prioritizes the current zone, and places a map pin. If none are known in the current zone, it announces the closest known location on the same continent in chat and pins it. Hover over a Devitools-placed map pin to see the NPC name, service, and zone. The tool identifies Classic-derived locations that have not been verified in Forever. Use **Clear pin** beneath it to remove the current user map pin. Right-drag the button to move it; its position is saved per character. Searches work outside combat and replace your current user waypoint.
 
+Where is also draws a walking route on the minimap and world map using bundled collision maps and Polestar's walking router. The pin and route clear automatically when you reach within three yards of the recorded destination, or you can clear them manually. Arrival is checked outside combat. Routes recalculate when you stray and pause during combat. The maps are based on an older Forever client build, so changed terrain, uncertain floor heights and incomplete map coverage can still cause incorrect routes. If a route cannot be found, the map pin remains available. No other navigation addon is required.
 The bundled data is an incomplete snapshot, not a live listing of every NPC. Some NPCs or zones may be absent, faction access and locations can change, and NPC names are currently in English. Trainer skill levels and reagent stock are not checked, so a nearby result may not teach the rank or sell the item you need. Distances are straight-line distances, not travel routes; different continents cannot be compared. A missing player position or an unsupported map pin is reported in chat. See [Data/NPC_SOURCES.md](Data/NPC_SOURCES.md) for the data sources and licenses.
 
 ## Development
 
 The addon loads `Devitools.lua` (core), `Data/SpellData.lua` (spell IDs and families), `Modules/BuffReminder.lua` (the reminder tool and its settings), `Data/ServiceNPCs.lua` (locator data), and `Modules/WhereIs.lua` (the locator tool) in the order listed in the TOC. WoW passes a shared addon namespace to each file.
 
-For linting, run `selene .` from the project directory. `selene.toml` selects `wow.yml`, a Lua 5.1 standard library extended with the WoW APIs and saved variables currently used by Devitools. Add new game globals to `wow.yml` as the addon grows; this keeps warnings for genuinely unknown names enabled.
+For linting, run `selene .` from the project directory. `selene.toml` selects `wow.yml`, a Lua 5.1 standard library extended with the WoW APIs and saved variables currently used by Devitools. Add new game globals to `wow.yml` as the addon grows; this keeps warnings for genuinely unknown names enabled. The lint configuration excludes bundled third-party files and test mocks.
 
 Run the locator checks with a Lua 5.1-compatible interpreter: `lua tests/WhereIs_test.lua`.
+
+Walking-route checks: `lua tests/WalkingRoute_test.lua`. The real-map smoke test `node tests/PolestarRoute_test.js` requires the `fengari` Node package; set `FENGARI_PATH` to its installation if needed. The bundled router's source, map provenance, and license are documented in `Vendor/PolestarNav/README.md`.
+
+Devitools is distributed under GPL-3.0-or-later; see [LICENSE](LICENSE) and the notices accompanying bundled third-party material.

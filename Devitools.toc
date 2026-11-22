@@ -10,4 +10,12 @@ Data\SpellData.lua
 Modules\BuffReminder.lua
 
 Data\ServiceNPCs.lua
+Vendor\PolestarNav\Nav\Nav.xml
+Vendor\PolestarNav\Routing\Costs.lua
+Vendor\PolestarNav\Routing\PathGrid.lua
+Vendor\PolestarNav\Routing\Path.lua
+Vendor\PolestarNav\Routing\PathJobs.lua
+Vendor\PolestarNav\API.lua
+Modules\WorldRouteMap.lua
+Modules\WalkingRoute.lua
 Modules\WhereIs.lua

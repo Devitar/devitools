@@ -2,6 +2,7 @@
 local messages, waypoint = {}, nil
 local faction, currentMap, allowPin, setPin = "Alliance", 1, true, true
 local locatorButton, clearButton, openedMenu
+local routeStarts, routeStops = 0, 0
 local eventFrames = {}
 local function fire(event)
     for _, frame in ipairs(eventFrames[event] or {}) do
@@ -33,7 +34,7 @@ C_Map = {
     HasUserWaypoint = function() return waypoint ~= nil end,
     ClearUserWaypoint = function() waypoint = nil; fire("USER_WAYPOINT_UPDATED") end,
     GetUserWaypoint = function()
-        if waypoint then return { uiMapID = waypoint.map, position = vector(waypoint.x, waypoint.y) } end
+        if waypoint then return { uiMapID = waypoint.map, position = { x = waypoint.x, y = waypoint.y } } end
     end,
     GetPlayerMapPosition = function() return vector(0, 0) end,
     GetWorldPosFromMapPos = function(map, point)
@@ -87,7 +88,10 @@ MenuUtil = { CreateContextMenu = function(owner, builder)
     openedMenu = createMenu()
     builder(owner, openedMenu)
 end }
-local ns = { ServiceNPCs = {
+local ns = { WalkingRoute = {
+    Start = function() routeStarts = routeStarts + 1 end,
+    Stop = function() routeStops = routeStops + 1 end,
+}, ServiceNPCs = {
     innkeeper = {
         { name = "Enemy", faction = "H", map = 1, x = 0.01, y = 0 },
         { name = "Same zone", faction = "A", map = 1, x = 0.5, y = 0 },
@@ -127,6 +131,14 @@ assert(waypoint and messages[#messages]:find("Fishing trainer", 1, true), "profe
 assert(clearButton.visible, "a Devitools waypoint must show the clear button")
 clearButton.OnClick()
 assert(not waypoint and not clearButton.visible and not DevitoolsCharacterDB.whereIsWaypoint, "clear must remove the pin and its saved details")
+assert(routeStarts == 2 and routeStops >= 1, "pinning should start routing and clearing should stop it")
+waypoint = { map = 1, x = 0.2, y = 0.3 }
+DevitoolsCharacterDB.whereIsWaypoint = { map = 1, x = 0.2, y = 0.3 }
+fire("PLAYER_ENTERING_WORLD")
+assert(routeStarts == 3, "a saved matching waypoint should resume tracking after reload")
+waypoint = { map = 1, x = 0.4, y = 0.3 }
+fire("PLAYER_ENTERING_WORLD")
+assert(routeStarts == 3, "a replacement waypoint must not resume Devitools tracking")
 messages, waypoint = {}, nil
 local find = ns.WhereIs.FindNearest
 local category = { key = "innkeeper", label = "Innkeeper" }

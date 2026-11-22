@@ -1,6 +1,10 @@
 base: lua51
 
 globals:
+  WorldMapFrame:
+    any: true
+  OpenMapAPI:
+    any: true
   CreateFrame:
     any: true
   UIParent:
@@ -78,4 +82,14 @@ globals:
   C_Map.HasUserWaypoint:
     any: true
   C_Map.ClearUserWaypoint:
+    any: true
+  Minimap:
+    any: true
+  IsIndoors:
+    any: true
+  GetCVar:
+    any: true
+  GetPlayerFacing:
+    any: true
+  C_Timer.After:
     any: true
