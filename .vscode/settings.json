@@ -1,0 +1,6 @@
+{
+  "stylua.targetReleaseVersion": "latest",
+  "luau-lsp.types.definitionFiles": {
+    "wow": ".vscode/wow.d.luau"
+  }
+}

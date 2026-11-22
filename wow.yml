@@ -1,0 +1,49 @@
+base: lua51
+
+globals:
+  CreateFrame:
+    any: true
+  UIParent:
+    any: true
+  ChatFontNormal:
+    any: true
+  issecretvalue:
+    any: true
+  UnitClass:
+    any: true
+  UnitIsDeadOrGhost:
+    any: true
+  InCombatLockdown:
+    any: true
+  GetTime:
+    any: true
+  C_Spell.GetSpellName:
+    any: true
+  C_SpellBook.GetNumSpellBookSkillLines:
+    any: true
+  C_SpellBook.GetSpellBookSkillLineInfo:
+    any: true
+  C_SpellBook.GetSpellBookItemInfo:
+    any: true
+  C_SpellBook.GetSpellBookItemName:
+    any: true
+  C_SpellBook.IsSpellKnown:
+    any: true
+  C_UnitAuras.GetAuraDataByIndex:
+    any: true
+  Enum.SpellBookSpellBank.Player:
+    property: read-only
+  Settings.RegisterCanvasLayoutCategory:
+    any: true
+  Settings.RegisterAddOnCategory:
+    any: true
+  Settings.OpenToCategory:
+    any: true
+  SlashCmdList.DEVITOOLS:
+    property: full-write
+  SLASH_DEVITOOLS1:
+    property: full-write
+  DevitoolsDB:
+    any: true
+  DevitoolsCharacterDB:
+    any: true
