@@ -59,6 +59,43 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Tools\Build.ps1
 
 The script writes `build/Devitools-<version>.zip`, using the version from `Devitools.toc`, not a Git tag. Running it again for the same version overwrites that ZIP. The ZIP contains a single `Devitools` folder; for manual installation, extract it directly into `Interface/AddOns` so that `Devitools.toc` is inside `Interface/AddOns/Devitools`. It includes files referenced by the TOC and its XML, along with the applicable license and attribution notices. Use `-OutputPath <path>` to choose a different archive location. Publish the matching source for each release as required by the included licenses.
 
+### Publishing a release
+
+The commands below use `0.2.0` and `v0.2.0` as examples; replace them with the intended version and tag. They assume the release commit is on `main` and the remote is named `origin`.
+
+1. Update `## Version:` in `Devitools.toc` to the release version. Run `selene .`, the relevant tests, and in-game checks, then prepare release notes describing the changes.
+2. Review and commit the intended source changes, including the version update. Make sure every addon file used in the build is tracked so the tag contains the matching source. For example:
+
+   ```powershell
+   git status --short
+   git add -A
+   git diff --cached
+   git commit -m "Release v0.2.0"
+   git status --short
+   ```
+
+   Review the staged changes before committing; `git add -A` stages all tracked changes and non-ignored new files. Ensure the working tree has no uncommitted release changes before building.
+3. Build and validate the ZIP from that commit. Substitute the version from the TOC:
+
+   ```powershell
+   powershell -NoProfile -ExecutionPolicy Bypass -File .\Tools\Build.ps1
+   powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\Build_test.ps1 -ArchivePath .\build\Devitools-0.2.0.zip
+   ```
+
+   The validation compares the archive with the current working tree. If you change any packaged file afterward, commit the changes and rebuild before tagging.
+4. Create an annotated tag for the release commit, then push the branch and tag:
+
+   ```powershell
+   git tag -a v0.2.0 -m "Devitools v0.2.0"
+   git push origin main
+   git push origin v0.2.0
+   ```
+
+5. On [GitHub Releases](https://github.com/Devitar/devitools/releases), draft a release using the existing `v0.2.0` tag. Add the release notes and attach `build/Devitools-0.2.0.zip`, then publish it. GitHub provides source archives for the tag; keep the tagged repository publicly accessible so users can obtain the exact matching source and included license notices.
+6. In the CurseForge author dashboard, open the project, choose **Files > Upload file**, and upload the same `build/Devitools-0.2.0.zip`. Select the appropriate release type and Forever game version, add the changelog, and submit it for review. The addon ZIP, not GitHub's automatically generated source archive, is the file to upload to CurseForge.
+
+If a release must be corrected after tagging or publishing, create a new version and tag rather than changing an existing public tag. Keep the source for each distributed release available as required by its licenses.
+
 The addon loads its core, data, tools, and bundled routing code in the order listed in `Devitools.toc`. `Modules/BuffReminder.lua`, `Modules/WhereIs.lua`, and `Modules/BagCleaner.lua` implement the main tools; `Data/SpellData.lua` and `Data/ServiceNPCs.lua` contain their spell and NPC data. WoW passes a shared addon namespace to each file.
 
 For linting, run `selene .` from the project directory. `selene.toml` selects `wow.yml`, a Lua 5.1 standard library extended with the WoW APIs and saved variables currently used by Devitools. Add new game globals to `wow.yml` as the addon grows; this keeps warnings for genuinely unknown names enabled. The lint configuration excludes bundled third-party files, test mocks, editor type definitions, and generated build output.
