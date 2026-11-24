@@ -28,6 +28,10 @@ declare Minimap: any
 declare WorldMapFrame: any
 declare OpenMapAPI: any
 declare C_Item: any
+declare C_Container: any
+declare C_TooltipInfo: any
+declare ITEM_CONJURED: any
+declare GetLocale: any
 declare GetInventoryItemID: any
 declare IsIndoors: any
 declare GetCVar: any

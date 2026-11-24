@@ -1,6 +1,6 @@
 # Forever buff coverage checklist
 
-Last reviewed: 2026-11-21. This is a working inventory, not a claim that every persistent buff has been found. IDs identify spells in the client; runtime availability, rank recognition, and aura behavior require separate confirmation. No row below is marked in-game verified. A checked box means it is included in Devitools, not that its behavior has been tested in game.
+Class spell inventory last reviewed: 2026-11-21. This is a working inventory, not a claim that every persistent buff has been found. IDs identify spells in the client; runtime availability, rank recognition, and aura behavior require separate confirmation. A checked box means it is included in Devitools, not that all its behavior has been tested in game.
 
 ## Evidence and method
 
@@ -31,11 +31,12 @@ Last reviewed: 2026-11-21. This is a working inventory, not a claim that every p
 | Warrior | Battle Shout (6673) | [x] Included. Verify ranks and whether a five-minute warning is appropriate for a short-duration shout. |
 | Warrior | Stances and other shouts | [ ] Candidates: inspect Forever's spellbook, stance API, exclusivity, and desired short-buff behavior. |
 | All | Well Fed (19705 and other same-named auras) | [x] Included, off by default. Verify different food effects and localization; food effects with different names may be missed. |
+| All | Cozy Sleeping Bag Well-Rested (aura 429959) | [x] Included, off by default. The user confirmed the active aura ID in game; expiration behavior still needs separate verification. |
 | All | Sharpening stones, weightstones and oils | [x] Optional per-hand temporary coating reminders, independent of class imbues; verify in game. |
 
 ## Known implementation gaps
 
 - Learned-spell detection indexes known player spellbook entries by localized name, so higher ranks with the same name as the configured spell can be recognized without a fixed rank list. Verify this in game for each family; ranks with different names or spells omitted from the visible player spellbook may require explicit mappings. Same-named unrelated spells may also need disambiguation.
 - The addon compares localized aura names. Different aura names for a group spell, different IDs with the same name, and secret aura data can affect results. Reminder scanning is paused in combat; other restricted situations still need testing.
-- Settings are shared across characters except the Demon Skin preference. Different characters may want different buff choices.
+- Most buff settings are shared across characters; manually tracked buffs and the Demon Skin preference are per character. Different characters may want different choices for other reminders.
 - This checklist does not establish exhaustiveness or imply that combat cooldowns, temporary effects, pet buffs, weapon enchants, and stances all belong in a persistent self-buff reminder.

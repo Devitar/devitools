@@ -1,2 +1,2 @@
 std = "wow"
-exclude = ["Vendor/**", "tests/**"]
+exclude = ["Vendor/**", "tests/**", "build/**", ".vscode/**"]

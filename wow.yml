@@ -1,6 +1,46 @@
 base: lua51
 
 globals:
+  C_TooltipInfo.GetBagItem:
+    any: true
+  ITEM_CONJURED:
+    any: true
+  GetLocale:
+    any: true
+  ContainerFrameCombinedBags:
+    any: true
+  ContainerFrameContainer:
+    any: true
+  ContainerFrame1:
+    any: true
+  C_Container:
+    any: true
+  C_Item.GetItemInfo:
+    any: true
+  CursorHasItem:
+    any: true
+  GetCursorInfo:
+    any: true
+  DeleteCursorItem:
+    any: true
+  StaticPopupDialogs:
+    any: true
+  StaticPopup_Show:
+    any: true
+  CANCEL:
+    any: true
+  GetCoinTextureString:
+    any: true
+  SetItemButtonTexture:
+    any: true
+  SetItemButtonCount:
+    any: true
+  NUM_TOTAL_EQUIPPED_BAG_SLOTS:
+    any: true
+  NUM_BAG_SLOTS:
+    any: true
+  MainMenuBarBackpackButton:
+    any: true
   WorldMapFrame:
     any: true
   OpenMapAPI:

@@ -1,6 +1,6 @@
 ## A suite of quality-of-life tools for World of Warcraft: Forever
 
-Devitools helps you keep track of buffs and find useful NPCs without interrupting your adventure. Each tool can be enabled or disabled independently, and its on-screen controls can be moved to suit your UI.
+Devitools helps you keep track of buffs, find useful NPCs, and make space in your bags. Each tool can be enabled or disabled independently, and the buff and locator windows can be moved to suit your UI.
 
 ## Buff Reminder
 
@@ -26,6 +26,10 @@ Looking for an innkeeper or a trainer? Click the movable **Where is...** button 
 - Customize which services and map routes appear, the arrival distance, chat messages, and search options. Right-drag the button to move it, or lock it in place.
 
 NPC locations and walking maps are not complete and may become outdated, so a result or route may sometimes be missing or inaccurate.
+
+## Bag Cleaner
+
+Need to make room? Click **Make space** above the bag window, enter how many slots you want to free, and review the lowest vendor-value items. Hover over an item to see its tooltip, or right-click to ignore that suggestion or add it to your exclusion list. You can confirm deletion of one item, or confirm a list and delete its items one click at a time. Deletion removes the full quantity in a bag slot. Quest items, locked slots, Hearthstones, Soul Shards, ammunition, and conjured items are excluded; add more items by name in settings. You can also set a default quantity or filter for poor-quality or sellable items. Each slot is checked again before deletion. Vendor value does not reflect auction value or how useful an item might be to you.
 
 ## Settings
 

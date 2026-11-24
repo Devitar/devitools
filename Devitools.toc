@@ -11,6 +11,7 @@ Modules\Settings.lua
 Modules\WeaponEnchants.lua
 Modules\TrackedBuffs.lua
 Modules\BuffReminder.lua
+Modules\BagCleaner.lua
 
 Data\ServiceNPCs.lua
 Vendor\PolestarNav\Nav\Nav.xml

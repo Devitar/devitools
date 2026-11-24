@@ -1,6 +1,6 @@
 # Devitools
 
-Devitools is a suite of quality-of-life tools for World of Warcraft: Forever (interface 16001). Its tools help you keep track of buffs and find nearby services; more can be added over time.
+Devitools is a suite of quality-of-life tools for World of Warcraft: Forever (interface 16001). Its tools help you track buffs, find nearby services, and make space in your bags.
 
 ## Installation and settings
 
@@ -12,17 +12,27 @@ Type `/dvt` or open **Game Menu > Options > AddOns > Devitools** to access setti
 
 Buff Reminder shows a movable list of supported self buffs that are missing or have five minutes or less remaining by default. It can also track Well Fed and the Cozy Sleeping Bag's Well-Rested buff; both reminders are off by default. Only class spells your character knows are suggested. The list hides when everything is covered, while dead, and during combat; it updates again after combat.
 
-In settings, you can toggle each supported class spell, Well Fed, and Well-Rested, enable or disable Buff Reminder, set the expiration warning time, lock the reminder window, or reset its position. Situational utility buffs such as Detect Invisibility and Unending Breath appear separately and default off; previously saved choices are kept. Right-drag the reminder window to move it while unlocked. Most settings are shared across your characters; manually tracked buffs and the Demon Skin preference are per character. Demon Skin turns off when that warlock first learns Demon Armor; you can turn it back on manually.
+In settings, you can toggle each supported class spell, Well Fed, and Well-Rested, enable or disable Buff Reminder, set the expiration warning time, lock the reminder window, or reset its position. Situational utility buffs such as Detect Invisibility and Unending Breath appear separately and default off; previously saved choices are kept. Right-drag the reminder window to move it while unlocked, or click its cogwheel to open Buff Reminder settings. Most settings are shared across your characters; manually tracked buffs and the Demon Skin preference are per character. Demon Skin turns off when that warlock first learns Demon Armor; you can turn it back on manually.
 
 Optional main-hand and off-hand coating reminders track temporary weapon coatings such as sharpening stones, weightstones, and oils. Rogues can separately track poisons, warlocks can track Firestone or Spellstone on their main hand, and shamans can track weapon imbues. These reminders are off by default and use the same expiration warning time as buffs. Any active effect of the selected kind satisfies its reminder; it does not select a particular poison, stone, or imbue. Coatings and class imbues are checked independently, and permanent weapon enchants do not satisfy either reminder.
 
 Related alternatives, such as mage armors and paladin blessings, share a reminder: any listed active alternative satisfies the group, and the reminder appears if at least one learned alternative is enabled. This avoids asking for mutually exclusive buffs at the same time.
 
-To track an elixir or another active player buff, open the Buff Reminder settings, scroll to **Manually tracked buffs**, and choose **Track active buff**. Each selected buff can be toggled or removed there. Manually tracked entries match the buff's displayed name, use the same expiration threshold, and are saved separately for each character; select only effects you want to maintain.
+To track an elixir or another active player buff, open the Buff Reminder settings, scroll to **Manually tracked buffs**, and choose **Track active buff**. Buffs already covered by another reminder are excluded from the picker. Each selected buff can be toggled or removed there. Manually tracked entries match the buff's displayed name, use the same expiration threshold, and are saved separately for each character; select only effects you want to maintain.
 
 Well-Rested tracks the sleeping bag XP aura when present, missing, or nearing expiration; any number of stacks counts as active. The reminder works even if someone else provides the sleeping bag.
 
 The initial spell list covers common self buffs for druids, mages, priests, warlocks, warriors, paladins, and shamans. This is a starting list, not a complete catalog of every buff, and Forever-specific spell or aura changes may require adjustments after in-game testing. Reminders are informational and do not cast spells or check for food in your bags. See [BUFF_COVERAGE.md](BUFF_COVERAGE.md) for the class-by-class inventory, sources, and outstanding verification.
+
+## Bag Cleaner
+
+Use **Make space** above an open bag window to find low vendor-value items when you need bag space. Enter the number of slots to free and click **Find**, then hover over the scrollable results for their tooltips. The limit reflects total equipped bag capacity, including slots that are already empty. Items are ranked by their total vendor value, including their quantity. Locked and quest items, Hearthstones, Soul Shards, ammunition, and conjured items are excluded. Add or remove exact item names in Bag Cleaner settings to protect more items on that character; names are matched without regard to capitalization. Conjured status is read from the localized item tooltip; if an item's details cannot be read, it is omitted until a later search. Vendor price does not reflect auction value or personal usefulness, so review the results carefully.
+
+Click the cogwheel in the Bag Cleaner window to open its settings. There you can set the default number of slots to free and optionally show only poor-quality items or exclude items with no vendor value. Both filters are off by default and shared across characters; the custom exclusion list is per character.
+
+Right-click a suggested item to **Ignore Suggestion** for the current results or **Add to Exclude List** for that character. The next eligible item replaces it when one is available. Ignored suggestions can return when you search again; excluded item names remain protected until removed in settings.
+
+Click an item to confirm its deletion, or choose **Delete all results...** to review and confirm each item in the same movable window. Deleting an item removes the full quantity in its bag slot; the confirmation warns when that quantity is greater than one. The queue includes all results, including those further down the scrollable list, and can be cancelled at any time. The game may ask for additional confirmation for certain items. The cleaner checks each slot again before deleting and stops if its contents change. Deletion is unavailable during combat, and the cursor must be empty. The Bag Cleaner settings page can hide its button.
 
 ## Where is...
 
@@ -33,19 +43,27 @@ The bundled data is an incomplete snapshot, not a live listing of every NPC. Som
 
 ## Development
 
+To install a separate local development copy alongside the CurseForge release, run:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Tools\Install-Dev.ps1
+```
+
+The script installs `Devitools-Dev` in the Forever AddOns folder. It has its own settings and character data, appears as **Devitools (Dev)**, and uses `/dvtdev`. Run the script again after changing the source. The release and development copies can both be installed; if both are enabled, their on-screen controls and reminders can appear twice, and they share the game's map waypoint. Disable the copy you are not actively using to avoid that. Use `-AddOnsPath <path>` to choose another AddOns directory.
+
 To create a CurseForge-ready archive on Windows, run from the project root:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\Tools\Build.ps1
 ```
 
-The script writes `build/Devitools-<version>.zip`, using the version from `Devitools.toc`. The ZIP contains a single `Devitools` folder; for manual installation, extract it directly into `Interface/AddOns` so that `Devitools.toc` is inside `Interface/AddOns/Devitools`. It includes files referenced by the TOC and its XML, along with the applicable license and attribution notices. Use `-OutputPath <path>` to choose a different archive location. Publish the matching source for each release as required by the included licenses.
+The script writes `build/Devitools-<version>.zip`, using the version from `Devitools.toc`, not a Git tag. Running it again for the same version overwrites that ZIP. The ZIP contains a single `Devitools` folder; for manual installation, extract it directly into `Interface/AddOns` so that `Devitools.toc` is inside `Interface/AddOns/Devitools`. It includes files referenced by the TOC and its XML, along with the applicable license and attribution notices. Use `-OutputPath <path>` to choose a different archive location. Publish the matching source for each release as required by the included licenses.
 
-The addon loads `Devitools.lua` (core), `Data/SpellData.lua` (spell IDs and families), `Modules/BuffReminder.lua` (the reminder tool and its settings), `Data/ServiceNPCs.lua` (locator data), and `Modules/WhereIs.lua` (the locator tool) in the order listed in the TOC. WoW passes a shared addon namespace to each file.
+The addon loads its core, data, tools, and bundled routing code in the order listed in `Devitools.toc`. `Modules/BuffReminder.lua`, `Modules/WhereIs.lua`, and `Modules/BagCleaner.lua` implement the main tools; `Data/SpellData.lua` and `Data/ServiceNPCs.lua` contain their spell and NPC data. WoW passes a shared addon namespace to each file.
 
-For linting, run `selene .` from the project directory. `selene.toml` selects `wow.yml`, a Lua 5.1 standard library extended with the WoW APIs and saved variables currently used by Devitools. Add new game globals to `wow.yml` as the addon grows; this keeps warnings for genuinely unknown names enabled. The lint configuration excludes bundled third-party files and test mocks.
+For linting, run `selene .` from the project directory. `selene.toml` selects `wow.yml`, a Lua 5.1 standard library extended with the WoW APIs and saved variables currently used by Devitools. Add new game globals to `wow.yml` as the addon grows; this keeps warnings for genuinely unknown names enabled. The lint configuration excludes bundled third-party files, test mocks, editor type definitions, and generated build output.
 
-Run the locator checks with a Lua 5.1-compatible interpreter: `lua tests/WhereIs_test.lua`.
+Run the Bag Cleaner and locator checks with a Lua 5.1-compatible interpreter: `lua tests/BagCleaner_test.lua` and `lua tests/WhereIs_test.lua`. Additional focused tests are in `tests/`.
 
 Walking-route checks: `lua tests/WalkingRoute_test.lua`. The real-map smoke test `node tests/PolestarRoute_test.js` requires the `fengari` Node package; set `FENGARI_PATH` to its installation if needed. The bundled router's source, map provenance, and license are documented in `Vendor/PolestarNav/README.md`.
 

@@ -23,7 +23,14 @@ frame:SetMovable(true)
 frame:EnableMouse(true)
 frame:RegisterForDrag("RightButton")
 frame:SetClampedToScreen(true)
-frame:SetBackdrop({ bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background", edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border", tile = true, tileSize = 32, edgeSize = 16, insets = { left = 4, right = 4, top = 4, bottom = 4 } })
+frame:SetBackdrop({
+    bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+    edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+    tile = true,
+    tileSize = 32,
+    edgeSize = 16,
+    insets = { left = 4, right = 4, top = 4, bottom = 4 },
+})
 frame.title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 frame.title:SetPoint("TOP", -10, -9)
 frame.title:SetText("Devitools: Buff reminders")
@@ -47,10 +54,18 @@ end
 local learnedNames = {}
 local function refreshSpellbook()
     learnedNames = {}
-    if not C_SpellBook or not C_SpellBook.GetNumSpellBookSkillLines
-        or not C_SpellBook.GetSpellBookSkillLineInfo or not C_SpellBook.GetSpellBookItemInfo
-        or not C_SpellBook.GetSpellBookItemName or not C_SpellBook.IsSpellKnown
-        or not Enum or not Enum.SpellBookSpellBank then return end
+    if
+        not C_SpellBook
+        or not C_SpellBook.GetNumSpellBookSkillLines
+        or not C_SpellBook.GetSpellBookSkillLineInfo
+        or not C_SpellBook.GetSpellBookItemInfo
+        or not C_SpellBook.GetSpellBookItemName
+        or not C_SpellBook.IsSpellKnown
+        or not Enum
+        or not Enum.SpellBookSpellBank
+    then
+        return
+    end
     local bank = Enum.SpellBookSpellBank.Player
     for line = 1, C_SpellBook.GetNumSpellBookSkillLines() do
         local info = C_SpellBook.GetSpellBookSkillLineInfo(line)
@@ -59,7 +74,9 @@ local function refreshSpellbook()
                 local item = C_SpellBook.GetSpellBookItemInfo(slot, bank)
                 if item and item.spellID and C_SpellBook.IsSpellKnown(item.spellID) then
                     local name = C_SpellBook.GetSpellBookItemName(slot, bank)
-                    if name and safe(name) then learnedNames[name] = true end
+                    if name and safe(name) then
+                        learnedNames[name] = true
+                    end
                 end
             end
         end
@@ -67,8 +84,12 @@ local function refreshSpellbook()
 end
 
 local function known(id)
-    if not C_SpellBook or not C_SpellBook.IsSpellKnown then return false end
-    if C_SpellBook.IsSpellKnown(id) then return true end
+    if not C_SpellBook or not C_SpellBook.IsSpellKnown then
+        return false
+    end
+    if C_SpellBook.IsSpellKnown(id) then
+        return true
+    end
     local name = spellName(id)
     return name and safe(name) and learnedNames[name] == true or false
 end
@@ -96,7 +117,9 @@ end
 -- a later manual choice to enable Demon Skin is preserved across reloads.
 local function checkDemonArmor()
     local _, class = UnitClass("player")
-    if class ~= "WARLOCK" then return end
+    if class ~= "WARLOCK" then
+        return
+    end
     local hasArmor = known(706)
     if hasArmor and not characterDB.hasSeenDemonArmor then
         characterDB.demonSkinEnabled = false
@@ -119,8 +142,13 @@ local function update()
     end
     for i = 1, 255 do
         local aura = C_UnitAuras.GetAuraDataByIndex("player", i, "HELPFUL")
-        if not safe(aura) then frame:Hide(); return end
-        if not aura then break end
+        if not safe(aura) then
+            frame:Hide()
+            return
+        end
+        if not aura then
+            break
+        end
         if safe(aura.name) and aura.name then
             local remaining
             if safe(aura.expirationTime) and aura.expirationTime and aura.expirationTime > 0 then
@@ -145,7 +173,9 @@ local function update()
         for _, id in ipairs(family.spells) do
             local name = spellName(id)
             if name and safe(name) then
-                if not wanted and buffEnabled(id) and known(id) then wanted = name end
+                if not wanted and buffEnabled(id) and known(id) then
+                    wanted = name
+                end
                 local duration = active[name]
                 if duration == true then
                     best = true
@@ -164,21 +194,34 @@ local function update()
             end
         end
         if wanted and best ~= true and (not best or best <= db.refresh) then
-            table.insert(reminders, (best and "|cffffff00" or "|cffff3333") .. wanted .. (best and " (expiring)|r" or " (missing)|r"))
+            table.insert(
+                reminders,
+                (best and "|cffffff00" or "|cffff3333") .. wanted .. (best and " (expiring)|r" or " (missing)|r")
+            )
         end
     end
     if db.wellFed then
         local foodName = spellName(spells.wellFed) or "Well Fed"
         local duration = safe(foodName) and active[foodName]
         if duration ~= true and (not duration or duration <= db.refresh) then
-            table.insert(reminders, (duration and "|cffffff00" or "|cffff3333") .. foodName .. (duration and " (expiring)|r" or " (missing)|r"))
+            table.insert(
+                reminders,
+                (duration and "|cffffff00" or "|cffff3333")
+                    .. foodName
+                    .. (duration and " (expiring)|r" or " (missing)|r")
+            )
         end
     end
 
     if db.wellRested and restedDuration ~= true and (not restedDuration or restedDuration <= db.refresh) then
         local name = spellName(spells.wellRested) or "Well-Rested"
         if safe(name) then
-            table.insert(reminders, (restedDuration and "|cffffff00" or "|cffff3333") .. name .. (restedDuration and " (expiring)|r" or " (missing)|r"))
+            table.insert(
+                reminders,
+                (restedDuration and "|cffffff00" or "|cffff3333")
+                    .. name
+                    .. (restedDuration and " (expiring)|r" or " (missing)|r")
+            )
         end
     end
 
@@ -189,7 +232,10 @@ local function update()
         ns.TrackedBuffs.Append(characterDB.trackedBuffs, active, db.refresh, reminders)
     end
 
-    if #reminders == 0 then frame:Hide(); return end
+    if #reminders == 0 then
+        frame:Hide()
+        return
+    end
     local offset = 24
     for i, text in ipairs(reminders) do
         if not frame.rows[i] then
@@ -205,10 +251,14 @@ local function update()
         row:SetText(text)
         row:Show()
         local height = row:GetStringHeight()
-        if not safe(height) or type(height) ~= "number" then height = 0 end
+        if not safe(height) or type(height) ~= "number" then
+            height = 0
+        end
         offset = offset + math.max(18, math.ceil(height) + 3)
     end
-    for i = #reminders + 1, #frame.rows do frame.rows[i]:Hide() end
+    for i = #reminders + 1, #frame.rows do
+        frame.rows[i]:Hide()
+    end
     frame:SetHeight(offset + 8)
     frame:Show()
 end
@@ -263,18 +313,40 @@ end)
 
 local refreshSettings
 local events = CreateFrame("Frame")
-for _, event in ipairs({ "ADDON_LOADED", "PLAYER_ENTERING_WORLD", "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED", "PLAYER_ALIVE", "PLAYER_DEAD", "SPELLS_CHANGED", "UNIT_AURA", "PLAYER_EQUIPMENT_CHANGED" }) do
+for _, event in ipairs({
+    "ADDON_LOADED",
+    "PLAYER_ENTERING_WORLD",
+    "PLAYER_REGEN_DISABLED",
+    "PLAYER_REGEN_ENABLED",
+    "PLAYER_ALIVE",
+    "PLAYER_DEAD",
+    "SPELLS_CHANGED",
+    "UNIT_AURA",
+    "PLAYER_EQUIPMENT_CHANGED",
+}) do
     events:RegisterEvent(event)
 end
 events:SetScript("OnEvent", function(_, event, arg)
     if event == "ADDON_LOADED" then
-        if arg ~= addonName then return end
-        if type(DevitoolsDB) ~= "table" then DevitoolsDB = {} end
+        if arg ~= addonName then
+            return
+        end
+        if type(DevitoolsDB) ~= "table" then
+            DevitoolsDB = {}
+        end
         db = DevitoolsDB
-        if type(DevitoolsCharacterDB) ~= "table" then DevitoolsCharacterDB = {} end
+        if type(DevitoolsCharacterDB) ~= "table" then
+            DevitoolsCharacterDB = {}
+        end
         characterDB = DevitoolsCharacterDB
-        for key, value in pairs(defaults) do if db[key] == nil then db[key] = value end end
-        if type(db.buffs) ~= "table" then db.buffs = {} end
+        for key, value in pairs(defaults) do
+            if db[key] == nil then
+                db[key] = value
+            end
+        end
+        if type(db.buffs) ~= "table" then
+            db.buffs = {}
+        end
         -- Copy the old account-wide list once per character; leave it in place
         -- until every character has had a chance to migrate its own copy.
         if type(characterDB.trackedBuffs) ~= "table" then
@@ -287,8 +359,16 @@ events:SetScript("OnEvent", function(_, event, arg)
                 end
             end
         end
-        if type(db.refresh) ~= "number" then db.refresh = defaults.refresh end
-        if type(db.position) == "table" and type(db.position[1]) == "string" and type(db.position[2]) == "string" and type(db.position[3]) == "number" and type(db.position[4]) == "number" then
+        if type(db.refresh) ~= "number" then
+            db.refresh = defaults.refresh
+        end
+        if
+            type(db.position) == "table"
+            and type(db.position[1]) == "string"
+            and type(db.position[2]) == "string"
+            and type(db.position[3]) == "number"
+            and type(db.position[4]) == "number"
+        then
             frame:ClearAllPoints()
             frame:SetPoint(db.position[1], UIParent, db.position[2], db.position[3], db.position[4])
         end
@@ -303,17 +383,20 @@ events:SetScript("OnEvent", function(_, event, arg)
         return
     end
     update()
-    if refreshSettings and (event == "SPELLS_CHANGED" or event == "PLAYER_ENTERING_WORLD") then refreshSettings() end
+    if refreshSettings and (event == "SPELLS_CHANGED" or event == "PLAYER_ENTERING_WORLD") then
+        refreshSettings()
+    end
 end)
 -- Aura events detect changes, but time passing alone must also trigger a
 -- refresh so an active buff can cross the expiration-warning threshold.
 local elapsed = 0
 events:SetScript("OnUpdate", function(_, delta)
     elapsed = elapsed + delta
-    if elapsed >= 2 then elapsed = 0; update() end
+    if elapsed >= 2 then
+        elapsed = 0
+        update()
+    end
 end)
-
-
 
 -- Register a canvas in the game's AddOns settings so it remains accessible
 -- even when reminders are hidden or disabled.
@@ -346,10 +429,26 @@ local function checkbox(label, x, y, getValue, setValue)
     return box
 end
 
-checkbox("Enable reminders", 20, -72, function() return db.enabled end, function(v) db.enabled = v end)
-checkbox("Well Fed", 20, -104, function() return db.wellFed end, function(v) db.wellFed = v end)
-checkbox("Well-Rested", 300, -104, function() return db.wellRested end, function(v) db.wellRested = v end)
-checkbox("Lock reminder window", 20, -136, function() return db.locked end, function(v) db.locked = v end)
+checkbox("Enable reminders", 20, -72, function()
+    return db.enabled
+end, function(v)
+    db.enabled = v
+end)
+checkbox("Well Fed", 20, -104, function()
+    return db.wellFed
+end, function(v)
+    db.wellFed = v
+end)
+checkbox("Well-Rested", 300, -104, function()
+    return db.wellRested
+end, function(v)
+    db.wellRested = v
+end)
+checkbox("Lock reminder window", 20, -136, function()
+    return db.locked
+end, function(v)
+    db.locked = v
+end)
 
 local reset = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
 reset:SetSize(145, 24)
@@ -391,7 +490,9 @@ timeBox:HookScript("OnEditFocusLost", function(self)
     timeDisplay:Show()
 end)
 timeBox:HookScript("OnShow", function(self)
-    if db then self:SetText(tostring(db.refresh)) end
+    if db then
+        self:SetText(tostring(db.refresh))
+    end
 end)
 local apply = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
 apply:SetSize(65, 24)
@@ -412,7 +513,10 @@ local function applyTime()
 end
 apply:SetScript("OnClick", applyTime)
 timeBox:SetScript("OnEnterPressed", applyTime)
-timeBox:SetScript("OnEscapePressed", function(self) self:SetText(tostring(db.refresh)); self:ClearFocus() end)
+timeBox:SetScript("OnEscapePressed", function(self)
+    self:SetText(tostring(db.refresh))
+    self:ClearFocus()
+end)
 
 local spellsHeading = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
 spellsHeading:SetPoint("TOPLEFT", 20, -230)
@@ -426,10 +530,16 @@ local listTop = -275
 if playerClass == "WARLOCK" then
     local armorName = spellName(706) or "Demon Armor"
     local skinName = spellName(687) or "Demon Skin"
-    checkbox(armorName, 20, listTop, function() return buffEnabled(706) end,
-        function(v) setBuffEnabled(706, v) end)
-    checkbox(skinName .. " (replaced by " .. armorName .. ")", 40, listTop - 30,
-        function() return buffEnabled(687) end, function(v) setBuffEnabled(687, v) end)
+    checkbox(armorName, 20, listTop, function()
+        return buffEnabled(706)
+    end, function(v)
+        setBuffEnabled(706, v)
+    end)
+    checkbox(skinName .. " (replaced by " .. armorName .. ")", 40, listTop - 30, function()
+        return buffEnabled(687)
+    end, function(v)
+        setBuffEnabled(687, v)
+    end)
     local upgradeHint = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
     upgradeHint:SetPoint("TOPLEFT", 70, listTop - 60)
     upgradeHint:SetText("Turns off when you learn Demon Armor; you can turn it back on.")
@@ -437,12 +547,21 @@ if playerClass == "WARLOCK" then
 elseif playerClass == "MAGE" then
     local iceName = spellName(7302) or "Ice Armor"
     local frostName = spellName(168) or "Frost Armor"
-    checkbox(iceName, 20, listTop, function() return buffEnabled(7302) end,
-        function(v) setBuffEnabled(7302, v) end)
-    checkbox(frostName .. " (replaced by " .. iceName .. ")", 40, listTop - 30,
-        function() return buffEnabled(168) end, function(v) setBuffEnabled(168, v) end)
-    checkbox(spellName(6117) or "Mage Armor", 300, listTop,
-        function() return buffEnabled(6117) end, function(v) setBuffEnabled(6117, v) end)
+    checkbox(iceName, 20, listTop, function()
+        return buffEnabled(7302)
+    end, function(v)
+        setBuffEnabled(7302, v)
+    end)
+    checkbox(frostName .. " (replaced by " .. iceName .. ")", 40, listTop - 30, function()
+        return buffEnabled(168)
+    end, function(v)
+        setBuffEnabled(168, v)
+    end)
+    checkbox(spellName(6117) or "Mage Armor", 300, listTop, function()
+        return buffEnabled(6117)
+    end, function(v)
+        setBuffEnabled(6117, v)
+    end)
     local armorHint = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
     armorHint:SetPoint("TOPLEFT", 50, listTop - 60)
     armorHint:SetText("Mage Armor is an alternative; only one armor can be active.")
@@ -450,7 +569,8 @@ elseif playerClass == "MAGE" then
 end
 for _, family in ipairs(buffs[playerClass] or {}) do
     for _, id in ipairs(family.spells) do
-        local shownAbove = family.utility or playerClass == "WARLOCK" and (id == 687 or id == 706)
+        local shownAbove = family.utility
+            or playerClass == "WARLOCK" and (id == 687 or id == 706)
             or playerClass == "MAGE" and (id == 168 or id == 7302 or id == 6117)
         if not shownAbove then
             local spellID = id
@@ -458,9 +578,11 @@ for _, family in ipairs(buffs[playerClass] or {}) do
             count = count + 1
             local column = (count - 1) % 2
             local row = math.floor((count - 1) / 2)
-            checkbox(name, 20 + column * 260, listTop - row * 30,
-                function() return buffEnabled(spellID) end,
-                function(v) setBuffEnabled(spellID, v) end)
+            checkbox(name, 20 + column * 260, listTop - row * 30, function()
+                return buffEnabled(spellID)
+            end, function(v)
+                setBuffEnabled(spellID, v)
+            end)
         end
     end
 end
@@ -481,9 +603,11 @@ if #utilityIDs > 0 then
         local spellID = id
         local column = (index - 1) % 2
         local row = math.floor((index - 1) / 2)
-        checkbox(spellName(spellID) or ("Spell " .. spellID), 20 + column * 260, bottom - 45 - row * 30,
-            function() return buffEnabled(spellID) end,
-            function(v) setBuffEnabled(spellID, v) end)
+        checkbox(spellName(spellID) or ("Spell " .. spellID), 20 + column * 260, bottom - 45 - row * 30, function()
+            return buffEnabled(spellID)
+        end, function(v)
+            setBuffEnabled(spellID, v)
+        end)
     end
     bottom = bottom - 45 - math.ceil(#utilityIDs / 2) * 30
 end
@@ -493,15 +617,29 @@ weaponHeading:SetText("Temporary weapon coatings (off by default)")
 local weaponHint = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
 weaponHint:SetPoint("TOPLEFT", weaponHeading, "BOTTOMLEFT", 0, -6)
 weaponHint:SetText("Tracks sharpening stones, weightstones, oils, and other temporary coatings.")
-checkbox("Main hand", 20, bottom - 60, function() return db.weaponMainHand end,
-    function(v) db.weaponMainHand = v end)
-checkbox("Off hand", 300, bottom - 60, function() return db.weaponOffHand end,
-    function(v) db.weaponOffHand = v end)
+checkbox("Main hand", 20, bottom - 60, function()
+    return db.weaponMainHand
+end, function(v)
+    db.weaponMainHand = v
+end)
+checkbox("Off hand", 300, bottom - 60, function()
+    return db.weaponOffHand
+end, function(v)
+    db.weaponOffHand = v
+end)
 bottom = bottom - 90
 local classImbues = {
-    ROGUE = { title = "Rogue poisons", hint = "Any poison on the selected weapon satisfies its reminder.", offHand = true },
+    ROGUE = {
+        title = "Rogue poisons",
+        hint = "Any poison on the selected weapon satisfies its reminder.",
+        offHand = true,
+    },
     WARLOCK = { title = "Firestone / Spellstone", hint = "Either stone imbue satisfies the main-hand reminder." },
-    SHAMAN = { title = "Shaman weapon imbues", hint = "Any weapon imbue satisfies the selected hand's reminder.", offHand = true },
+    SHAMAN = {
+        title = "Shaman weapon imbues",
+        hint = "Any weapon imbue satisfies the selected hand's reminder.",
+        offHand = true,
+    },
 }
 local classImbue = classImbues[playerClass]
 if classImbue then
@@ -511,11 +649,17 @@ if classImbue then
     local imbueHint = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
     imbueHint:SetPoint("TOPLEFT", imbueHeading, "BOTTOMLEFT", 0, -6)
     imbueHint:SetText(classImbue.hint)
-    checkbox("Main hand", 20, bottom - 60, function() return db.weaponImbueMainHand end,
-        function(v) db.weaponImbueMainHand = v end)
+    checkbox("Main hand", 20, bottom - 60, function()
+        return db.weaponImbueMainHand
+    end, function(v)
+        db.weaponImbueMainHand = v
+    end)
     if classImbue.offHand then
-        checkbox("Off hand", 300, bottom - 60, function() return db.weaponImbueOffHand end,
-            function(v) db.weaponImbueOffHand = v end)
+        checkbox("Off hand", 300, bottom - 60, function()
+            return db.weaponImbueOffHand
+        end, function(v)
+            db.weaponImbueOffHand = v
+        end)
     end
     bottom = bottom - 90
 end
@@ -533,7 +677,9 @@ local consumableStatus = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlig
 consumableStatus:SetPoint("TOPLEFT", 25, bottom - 95)
 local consumableRows = {}
 local function renderConsumables()
-    if not db then return end
+    if not db then
+        return
+    end
     for index, entry in ipairs(characterDB.trackedBuffs) do
         local rowIndex = index
         local tracked = entry
@@ -585,12 +731,16 @@ local function addConsumable(name)
     update()
 end
 consumableAdd:SetScript("OnClick", function(self)
-    if not C_UnitAuras or not C_UnitAuras.GetAuraDataByIndex then return end
+    if not C_UnitAuras or not C_UnitAuras.GetAuraDataByIndex then
+        return
+    end
     local names, seen, coveredIDs, coveredNames = {}, {}, {}, {}
     local function cover(id, fallback)
         coveredIDs[id] = true
         local name = spellName(id)
-        if not safe(name) then return end
+        if not safe(name) then
+            return
+        end
         name = name or fallback
         if type(name) == "string" then
             coveredNames[name] = true
@@ -613,12 +763,22 @@ consumableAdd:SetScript("OnClick", function(self)
     end
     for index = 1, 255 do
         local aura = C_UnitAuras.GetAuraDataByIndex("player", index, "HELPFUL")
-        if not safe(aura) then break end
-        if not aura then break end
+        if not safe(aura) then
+            break
+        end
+        if not aura then
+            break
+        end
         local name = aura.name
         local id = aura.spellId
-        if safe(name) and type(name) == "string" and safe(id) and not coveredIDs[id]
-            and not coveredNames[name] and not seen[name] then
+        if
+            safe(name)
+            and type(name) == "string"
+            and safe(id)
+            and not coveredIDs[id]
+            and not coveredNames[name]
+            and not seen[name]
+        then
             names[#names + 1] = name
             seen[name] = true
         end
@@ -641,9 +801,15 @@ if count == 0 and playerClass ~= "WARLOCK" and playerClass ~= "MAGE" then
     none:SetText("No class buffs are currently configured for your class.")
 end
 refreshSettings = function()
-    if not panel:IsShown() then return end
-    for _, control in ipairs(controls) do control.box:SetChecked(control.get()) end
-    if timeBox:IsVisible() then timeBox:SetText(tostring(db.refresh)) end
+    if not panel:IsShown() then
+        return
+    end
+    for _, control in ipairs(controls) do
+        control.box:SetChecked(control.get())
+    end
+    if timeBox:IsVisible() then
+        timeBox:SetText(tostring(db.refresh))
+    end
     timeStatus:SetText("")
     renderConsumables()
 end
