@@ -31,6 +31,9 @@ local function message(text, important)
 end
 
 local function isEnabled()
+    if type(DevitoolsCharacterDB) == "table" and DevitoolsCharacterDB.whereIsEnabled ~= nil then
+        return DevitoolsCharacterDB.whereIsEnabled ~= false
+    end
     return type(DevitoolsDB) ~= "table" or DevitoolsDB.whereIsEnabled ~= false
 end
 
@@ -296,8 +299,8 @@ events:SetScript("OnEvent", function(self, _, loaded)
     if type(DevitoolsDB) ~= "table" then
         DevitoolsDB = {}
     end
-    if DevitoolsDB.whereIsEnabled == nil then
-        DevitoolsDB.whereIsEnabled = true
+    if DevitoolsCharacterDB.whereIsEnabled == nil then
+        DevitoolsCharacterDB.whereIsEnabled = DevitoolsDB.whereIsEnabled ~= false
     end
     if isEnabled() then
         button:Show()
@@ -318,10 +321,10 @@ events:SetScript("OnEvent", function(self, _, loaded)
 end)
 
 local function setEnabled(enabled)
-    if type(DevitoolsDB) ~= "table" then
-        DevitoolsDB = {}
+    if type(DevitoolsCharacterDB) ~= "table" then
+        DevitoolsCharacterDB = {}
     end
-    DevitoolsDB.whereIsEnabled = enabled
+    DevitoolsCharacterDB.whereIsEnabled = enabled
     if refreshToggle then
         refreshToggle()
     end

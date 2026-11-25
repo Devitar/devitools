@@ -91,9 +91,21 @@ assert(defaultVisible, "the unfocused default count must have a visible text dis
 local enabledBox = named.DevitoolsBagCleanerEnabled
 assert(enabledBox.checked == true, "the enabled checkbox must reflect the default on login")
 DevitoolsDB = { bagCleanerEnabled = false }
-events.PLAYER_ENTERING_WORLD.OnEvent(events.PLAYER_ENTERING_WORLD, "PLAYER_ENTERING_WORLD")
+DevitoolsCharacterDB = {}
+events.PLAYER_LOGIN.OnEvent(events.PLAYER_LOGIN, "PLAYER_LOGIN")
 assert(enabledBox.checked == false, "the enabled checkbox must reflect a saved disabled setting")
+local disabledCharacter = DevitoolsCharacterDB
 DevitoolsDB = {}
+DevitoolsCharacterDB = {}
+events.PLAYER_LOGIN.OnEvent(events.PLAYER_LOGIN, "PLAYER_LOGIN")
+assert(enabledBox.checked and disabledCharacter.bagCleanerEnabled == false, "bag cleaner visibility must be per character")
+enabledBox.checked = false
+enabledBox.OnClick(enabledBox)
+local otherCharacter = DevitoolsCharacterDB
+assert(otherCharacter.bagCleanerEnabled == false and DevitoolsDB.bagCleanerEnabled == nil, "the toggle must not change the account-wide setting")
+DevitoolsCharacterDB = {}
+events.PLAYER_LOGIN.OnEvent(events.PLAYER_LOGIN, "PLAYER_LOGIN")
+assert(enabledBox.checked and otherCharacter.bagCleanerEnabled == false, "disabling an alt must not hide the tool for another character")
 assert(not named.DevitoolsBagCleanerButton.shown, "button must stay hidden when no bag is open")
 ContainerFrameCombinedBags = setmetatable({}, methods)
 ContainerFrameCombinedBags.shown = true

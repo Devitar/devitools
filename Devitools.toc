@@ -1,7 +1,7 @@
 ## Interface: 16001
 ## Title: Devitools
 ## Notes: Quality-of-life tools for WoW Forever.
-## Version: 0.2.0
+## Version: 0.2.1
 ## SavedVariables: DevitoolsDB
 ## SavedVariablesPerCharacter: DevitoolsCharacterDB
 

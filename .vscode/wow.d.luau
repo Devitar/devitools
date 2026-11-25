@@ -32,6 +32,8 @@ declare C_Container: any
 declare C_TooltipInfo: any
 declare ITEM_CONJURED: any
 declare GetLocale: any
+declare GetShapeshiftForm: any
+declare GetShapeshiftFormInfo: any
 declare GetInventoryItemID: any
 declare IsIndoors: any
 declare GetCVar: any

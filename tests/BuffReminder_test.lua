@@ -27,6 +27,8 @@ function methods:GetStringHeight()
 end
 function methods:SetChecked(value) self.checked = value end
 function methods:GetChecked() return self.checked end
+function methods:Show() self.visible = true end
+function methods:Hide() self.visible = false end
 function methods:IsShown() return true end
 function methods:IsVisible() return true end
 CreateFrame = function(kind, name, parent)
@@ -48,9 +50,11 @@ GameTooltip = {
     Show = function() tooltipHidden = false end,
     Hide = function() tooltipHidden = true end,
 }
-local activeName
+local activeName, activeID, activeExpiration, knowsSacrifice
+GetTime = function() return 0 end
+C_SpellBook = { IsSpellKnown = function(id) return id == 18788 and knowsSacrifice or false end }
 C_UnitAuras = { GetAuraDataByIndex = function(_, index)
-    if index == 1 and activeName then return { name = activeName, expirationTime = 0, spellId = 1 } end
+    if index == 1 and activeName then return { name = activeName, expirationTime = activeExpiration or 0, spellId = activeID or 1 } end
 end }
 local currentMenu
 MenuUtil = { CreateContextMenu = function(owner, build)
@@ -60,7 +64,7 @@ MenuUtil = { CreateContextMenu = function(owner, build)
     build(owner, currentMenu)
 end }
 C_Spell = { GetSpellName = function(id)
-    return ({ [132] = "Detect Invisibility", [5697] = "Unending Breath", [706] = "Demon Armor", [19028] = "Soul Link" })[id]
+    return ({ [132] = "Detect Invisibility", [5697] = "Unending Breath", [706] = "Demon Armor", [19028] = "Soul Link", [18788] = "Demonic Sacrifice" })[id]
 end }
 local ns = { Settings = { RegisterPage = function() return CreateFrame("Frame") end,
     Open = function(label) openedSettings = label end } }
@@ -112,6 +116,7 @@ end
 assert(byLabel["Detect Invisibility"].checked == true, "an explicitly enabled utility buff must remain enabled")
 assert(byLabel["Unending Breath"].checked == false, "an unset utility buff must default off")
 assert(byLabel["Demon Armor"].checked == true, "regular buffs must continue to default on")
+assert(byLabel["Demonic Sacrifice"].checked == true, "Demonic Sacrifice must have its own toggle")
 assert(not rawget(mainHands[1], "checked") and not rawget(byLabel["Off hand"], "checked"), "weapon coating reminders must default off")
 mainHands[1].checked = true
 mainHands[1].OnClick(mainHands[1])
@@ -126,6 +131,19 @@ assert(reminderFrame.rows[1].top == -24 and reminderFrame.rows[2].top == -59,
     "a wrapped reminder must move the following row down by its measured height")
 assert(reminderFrame.height >= 85, "the reminder window must grow to contain wrapped rows")
 DevitoolsDB.testLong = false
+knowsSacrifice = true
+activeName = nil
+events.UNIT_AURA.OnEvent(events.UNIT_AURA, "UNIT_AURA", "player")
+assert(reminderFrame.rows[1].text:find("Demonic Sacrifice %(missing%)"), "a learned missing sacrifice must be reminded")
+for id = 18789, 18792 do
+    activeName, activeID, activeExpiration = "Sacrifice effect", id, 3600
+    events.UNIT_AURA.OnEvent(events.UNIT_AURA, "UNIT_AURA", "player")
+    assert(not reminderFrame.visible, "each sacrifice aura must satisfy the reminder")
+    activeExpiration = 100
+    events.UNIT_AURA.OnEvent(events.UNIT_AURA, "UNIT_AURA", "player")
+    assert(reminderFrame.rows[1].text:find("Demonic Sacrifice %(expiring%)"), "each expiring sacrifice aura must be reminded")
+end
+knowsSacrifice, activeName, activeID, activeExpiration = false, nil, nil, nil
 local addButton
 for _, frame in ipairs(frames) do
     if frame.kind == "Button" and rawget(frame, "text") == "Track active buff" then addButton = frame end
@@ -168,11 +186,19 @@ DevitoolsDB.trackedBuffs = { { name = "Elixir", enabled = false } }
 DevitoolsCharacterDB = {}
 events.ADDON_LOADED.OnEvent(events.ADDON_LOADED, "ADDON_LOADED", "Devitools")
 local main = DevitoolsCharacterDB
+byLabel["Enable reminders"].checked = false
+byLabel["Enable reminders"].OnClick(byLabel["Enable reminders"])
+assert(main.buffReminderEnabled == false, "the visibility toggle must be saved on the character")
 assert(main.trackedBuffs[1].name == "Elixir" and main.trackedBuffs[1].enabled == false, "old shared settings should migrate")
 main.trackedBuffs[1].enabled = true
 DevitoolsCharacterDB = {}
 events.ADDON_LOADED.OnEvent(events.ADDON_LOADED, "ADDON_LOADED", "Devitools")
 assert(DevitoolsCharacterDB.trackedBuffs[1].enabled == false, "each character must receive an independent copy")
+assert(DevitoolsCharacterDB.buffReminderEnabled == true and main.buffReminderEnabled == false, "reminder visibility must be independent per character")
+DevitoolsDB.enabled = false
+DevitoolsCharacterDB = {}
+events.ADDON_LOADED.OnEvent(events.ADDON_LOADED, "ADDON_LOADED", "Devitools")
+assert(DevitoolsCharacterDB.buffReminderEnabled == false, "legacy disabled reminders must migrate")
 table.remove(DevitoolsCharacterDB.trackedBuffs, 1)
 assert(#main.trackedBuffs == 1 and main.trackedBuffs[1].enabled, "removing an alt's buff must not change the main's")
 DevitoolsDB.wellFed, DevitoolsDB.wellRested = true, true

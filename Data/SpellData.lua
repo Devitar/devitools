@@ -15,11 +15,17 @@ ns.SpellData = { wellFed = 19705, wellRested = 429959 }
 -- through the player's spellbook rather than listed as separate choices.
 -- Situational utility families have utility = true; their reminders default
 -- off, while an explicitly saved choice always takes precedence.
+-- Form families are opt-in: any selected active form satisfies the reminder.
 ns.SpellData.classBuffs = {
     DRUID = {
         { spells = { 1126, 21849 } }, -- Mark / Gift of the Wild
         { spells = { 16864 } }, -- Omen of Clarity
         { spells = { 467 } }, -- Thorns
+        { spells = { 5487, 9634, 768, 1066, 783, 24858 }, utility = true, form = true }, -- Druid forms
+    },
+    HUNTER = {
+        { spells = { 13163, 13165, 5118, 13161, 13159, 20043 } }, -- Mutually exclusive aspects
+        { spells = { 1299346 } }, -- Trueshot Aura, first Forever rank
     },
     MAGE = {
         { spells = { 1459, 23028 } }, -- Arcane Intellect / Brilliance
@@ -38,8 +44,16 @@ ns.SpellData.classBuffs = {
         { spells = { 132 }, utility = true }, -- Detect Invisibility
         { spells = { 5697 }, utility = true }, -- Unending Breath
         { spells = { 19028 }, auraIDs = { 25228 } }, -- Soul Link: learned spell and player aura
+        { spells = { 18788 }, auraIDs = { 18789, 18790, 18791, 18792 } }, -- Demonic Sacrifice: one aura per demon
     },
-    WARRIOR = { { spells = { 6673 } } }, -- Battle Shout
-    PALADIN = { { spells = { 19740, 19742, 19746, 20217, 1038, 19977 }, auraIDs = { 25782, 25898, 25918 } } }, -- blessings
-    SHAMAN = { { spells = { 324 } } }, -- Lightning Shield
+    WARRIOR = {
+        { spells = { 6673 } }, -- Battle Shout
+        { spells = { 2457, 71, 2458 }, utility = true, form = true }, -- Stances
+    },
+    PALADIN = {
+        { spells = { 19740, 19742, 20217, 1038, 19977 }, auraIDs = { 25782, 25898, 25918 } }, -- Blessings
+        { spells = { 465, 7294, 19746, 19876, 19888, 19891 } }, -- Auras
+        { spells = { 25780 }, utility = true }, -- Righteous Fury
+    },
+    SHAMAN = { { spells = { 324, 408510 } } }, -- Mutually exclusive elemental shields
 }

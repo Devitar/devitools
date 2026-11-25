@@ -127,14 +127,14 @@ local function checkDemonArmor()
     end
 end
 local function update()
-    if not db or not db.enabled or InCombatLockdown() or UnitIsDeadOrGhost("player") then
+    if not db or not characterDB or characterDB.buffReminderEnabled == false or InCombatLockdown() or UnitIsDeadOrGhost("player") then
         frame:Hide()
         return
     end
 
     -- A numeric value is seconds remaining; true means the aura is present
     -- but has no readable expiration. Keep the longest of same-named auras.
-    local active = {}
+    local active, activeIDs = {}, {}
     local restedDuration
     if not C_UnitAuras or not C_UnitAuras.GetAuraDataByIndex then
         frame:Hide()
@@ -159,6 +159,9 @@ local function update()
             if safe(aura.spellId) and aura.spellId == spells.wellRested then
                 restedDuration = remaining or true
             end
+            if safe(aura.spellId) and aura.spellId then
+                activeIDs[aura.spellId] = remaining or true
+            end
             local previous = active[aura.name]
             if not previous or previous ~= true and (not remaining or remaining > previous) then
                 active[aura.name] = remaining or true
@@ -168,6 +171,16 @@ local function update()
 
     local reminders = {}
     local _, class = UnitClass("player")
+    local currentFormID
+    if GetShapeshiftForm and GetShapeshiftFormInfo then
+        local index = GetShapeshiftForm()
+        if safe(index) and type(index) == "number" and index > 0 then
+            local _, _, _, id = GetShapeshiftFormInfo(index)
+            if safe(id) then
+                currentFormID = id
+            end
+        end
+    end
     for _, family in ipairs(buffs[class] or {}) do
         local wanted, best
         for _, id in ipairs(family.spells) do
@@ -176,7 +189,14 @@ local function update()
                 if not wanted and buffEnabled(id) and known(id) then
                     wanted = name
                 end
-                local duration = active[name]
+                local duration = (not family.form or buffEnabled(id)) and (activeIDs[id] or active[name])
+                if family.form and buffEnabled(id) and currentFormID == id then
+                    duration = true
+                end
+                -- Dire Bear is the upgraded Bear Form and also satisfies a Bear preference.
+                if family.form and id == 5487 and buffEnabled(id) and (currentFormID == 9634 or activeIDs[9634]) then
+                    duration = true
+                end
                 if duration == true then
                     best = true
                 elseif duration and best ~= true and (not best or duration > best) then
@@ -186,7 +206,7 @@ local function update()
         end
         for _, id in ipairs(family.auraIDs or {}) do
             local name = spellName(id)
-            local duration = name and safe(name) and active[name]
+            local duration = activeIDs[id] or (name and safe(name) and active[name])
             if duration == true then
                 best = true
             elseif duration and best ~= true and (not best or duration > best) then
@@ -323,6 +343,8 @@ for _, event in ipairs({
     "SPELLS_CHANGED",
     "UNIT_AURA",
     "PLAYER_EQUIPMENT_CHANGED",
+    "UPDATE_SHAPESHIFT_FORM",
+    "UPDATE_SHAPESHIFT_FORMS",
 }) do
     events:RegisterEvent(event)
 end
@@ -339,6 +361,9 @@ events:SetScript("OnEvent", function(_, event, arg)
             DevitoolsCharacterDB = {}
         end
         characterDB = DevitoolsCharacterDB
+        if characterDB.buffReminderEnabled == nil then
+            characterDB.buffReminderEnabled = db.enabled ~= false
+        end
         for key, value in pairs(defaults) do
             if db[key] == nil then
                 db[key] = value
@@ -430,9 +455,9 @@ local function checkbox(label, x, y, getValue, setValue)
 end
 
 checkbox("Enable reminders", 20, -72, function()
-    return db.enabled
+    return characterDB.buffReminderEnabled ~= false
 end, function(v)
-    db.enabled = v
+    characterDB.buffReminderEnabled = v
 end)
 checkbox("Well Fed", 20, -104, function()
     return db.wellFed
@@ -599,6 +624,12 @@ if #utilityIDs > 0 then
     local utilityHeading = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
     utilityHeading:SetPoint("TOPLEFT", 20, bottom - 15)
     utilityHeading:SetText("Situational or utility buffs (off by default)")
+    if playerClass == "DRUID" or playerClass == "WARRIOR" then
+        local formHint = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+        formHint:SetPoint("TOPLEFT", 20, bottom - 33)
+        formHint:SetText("Select preferred forms or stances; any selected one satisfies the reminder.")
+        bottom = bottom - 20
+    end
     for index, id in ipairs(utilityIDs) do
         local spellID = id
         local column = (index - 1) % 2

@@ -35,7 +35,7 @@ end
 -- The settings canvas may already be shown when its OnShow handler is assigned.
 DevitoolsDB, DevitoolsCharacterDB = nil, nil
 events.ADDON_LOADED.OnEvent(events.ADDON_LOADED, "ADDON_LOADED", "Devitools")
-assert(button.visible and toggle.checked == true and DevitoolsDB.whereIsEnabled == true,
+assert(button.visible and toggle.checked == true and DevitoolsCharacterDB.whereIsEnabled == true,
     "fresh install must show the enabled tool as checked without relying on OnShow")
 local byLabel, distanceInput, applyButton = {}, nil, nil
 for _, frame in ipairs(frames) do
@@ -56,16 +56,24 @@ applyButton.OnClick(applyButton)
 assert(ns.WhereIsOptions.Get("arrivalDistance") == 12, "invalid arrival distance must not overwrite the setting")
 toggle.checked = false
 toggle.OnClick(toggle)
-assert(not button.visible and toggle.checked == false and DevitoolsDB.whereIsEnabled == false,
+assert(not button.visible and toggle.checked == false and DevitoolsCharacterDB.whereIsEnabled == false,
     "the first click must disable the tool")
 toggle.checked = true
 toggle.OnClick(toggle)
-assert(button.visible and toggle.checked == true and DevitoolsDB.whereIsEnabled == true,
+assert(button.visible and toggle.checked == true and DevitoolsCharacterDB.whereIsEnabled == true,
     "the next click must re-enable the tool")
-DevitoolsDB.whereIsEnabled = false
+DevitoolsCharacterDB.whereIsEnabled = false
 page.OnShow(page)
 assert(toggle.checked == false, "opening the settings page must refresh the saved state")
 events.ADDON_LOADED.OnEvent(events.ADDON_LOADED, "ADDON_LOADED", "Devitools")
-assert(not button.visible and toggle.checked == false and DevitoolsDB.whereIsEnabled == false,
+assert(not button.visible and toggle.checked == false and DevitoolsCharacterDB.whereIsEnabled == false,
     "a saved disabled setting must stay disabled on load")
+local first = DevitoolsCharacterDB
+DevitoolsCharacterDB = {}
+events.ADDON_LOADED.OnEvent(events.ADDON_LOADED, "ADDON_LOADED", "Devitools")
+assert(button.visible and toggle.checked and first.whereIsEnabled == false, "tool visibility must be independent per character")
+DevitoolsDB.whereIsEnabled = false
+DevitoolsCharacterDB = {}
+events.ADDON_LOADED.OnEvent(events.ADDON_LOADED, "ADDON_LOADED", "Devitools")
+assert(DevitoolsCharacterDB.whereIsEnabled == false, "legacy visibility must migrate for existing users")
 io.write("WhereIsSettings tests passed\n")

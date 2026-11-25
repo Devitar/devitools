@@ -6,23 +6,27 @@ Devitools is a suite of quality-of-life tools for World of Warcraft: Forever (in
 
 Copy the `Devitools` folder into the Forever client's `Interface/AddOns` directory, restart the game or reload the UI, and enable Devitools in the addon list.
 
-Type `/dvt` or open **Game Menu > Options > AddOns > Devitools** to access settings. Expand Devitools in the sidebar to find each tool's settings page and enable switch. Disabling Where is hides its buttons and route; an existing map pin is kept.
+Type `/dvt` or open **Game Menu > Options > AddOns > Devitools** to access settings. Expand Devitools in the sidebar to find each tool's settings page and enable switch. Each tool's enabled state is saved per character; other settings may be shared. Existing account-wide enable choices are copied the first time each character loads the update. Disabling Where is hides its buttons and route; an existing map pin is kept.
 
 ## Buff Reminder
 
 Buff Reminder shows a movable list of supported self buffs that are missing or have five minutes or less remaining by default. It can also track Well Fed and the Cozy Sleeping Bag's Well-Rested buff; both reminders are off by default. Only class spells your character knows are suggested. The list hides when everything is covered, while dead, and during combat; it updates again after combat.
 
-In settings, you can toggle each supported class spell, Well Fed, and Well-Rested, enable or disable Buff Reminder, set the expiration warning time, lock the reminder window, or reset its position. Situational utility buffs such as Detect Invisibility and Unending Breath appear separately and default off; previously saved choices are kept. Right-drag the reminder window to move it while unlocked, or click its cogwheel to open Buff Reminder settings. Most settings are shared across your characters; manually tracked buffs and the Demon Skin preference are per character. Demon Skin turns off when that warlock first learns Demon Armor; you can turn it back on manually.
+In settings, you can toggle each supported class spell, Well Fed, and Well-Rested, enable or disable Buff Reminder, set the expiration warning time, lock the reminder window, or reset its position. Situational utility buffs such as Detect Invisibility and Unending Breath appear separately and default off; previously saved choices are kept. Right-drag the reminder window to move it while unlocked, or click its cogwheel to open Buff Reminder settings. Most settings are shared across your characters; the tool's enabled state, manually tracked buffs, and the Demon Skin preference are per character. Demon Skin turns off when that warlock first learns Demon Armor; you can turn it back on manually.
+
+Warlocks who know Demonic Sacrifice can enable its reminder under class buffs. Any of the four sacrifice effects satisfies it; the reminder warns when the effect is missing or near expiration. Turn it off when you prefer to keep a demon instead of maintaining a sacrifice effect.
 
 Optional main-hand and off-hand coating reminders track temporary weapon coatings such as sharpening stones, weightstones, and oils. Rogues can separately track poisons, warlocks can track Firestone or Spellstone on their main hand, and shamans can track weapon imbues. These reminders are off by default and use the same expiration warning time as buffs. Any active effect of the selected kind satisfies its reminder; it does not select a particular poison, stone, or imbue. Coatings and class imbues are checked independently, and permanent weapon enchants do not satisfy either reminder.
 
 Related alternatives, such as mage armors and paladin blessings, share a reminder: any listed active alternative satisfies the group, and the reminder appears if at least one learned alternative is enabled. This avoids asking for mutually exclusive buffs at the same time.
 
+Hunter aspects, Paladin auras, and Shaman Lightning Shield or Water Shield also use shared reminders. Hunters can separately track Trueshot Aura, and Paladins can opt in to Righteous Fury. Druids and Warriors can opt in to preferred forms or stances under situational buffs; any selected active form or stance satisfies that reminder. Dire Bear Form also satisfies a Bear Form preference. Paladin seals are not tracked.
+
 To track an elixir or another active player buff, open the Buff Reminder settings, scroll to **Manually tracked buffs**, and choose **Track active buff**. Buffs already covered by another reminder are excluded from the picker. Each selected buff can be toggled or removed there. Manually tracked entries match the buff's displayed name, use the same expiration threshold, and are saved separately for each character; select only effects you want to maintain.
 
 Well-Rested tracks the sleeping bag XP aura when present, missing, or nearing expiration; any number of stacks counts as active. The reminder works even if someone else provides the sleeping bag.
 
-The initial spell list covers common self buffs for druids, mages, priests, warlocks, warriors, paladins, and shamans. This is a starting list, not a complete catalog of every buff, and Forever-specific spell or aura changes may require adjustments after in-game testing. Reminders are informational and do not cast spells or check for food in your bags. See [BUFF_COVERAGE.md](BUFF_COVERAGE.md) for the class-by-class inventory, sources, and outstanding verification.
+The initial spell list covers common self buffs for druids, hunters, mages, priests, warlocks, warriors, paladins, and shamans. This is a starting list, not a complete catalog of every buff, and Forever-specific spell or aura changes may require adjustments after in-game testing. Reminders are informational and do not cast spells or check for food in your bags. See [BUFF_COVERAGE.md](BUFF_COVERAGE.md) for the class-by-class inventory, sources, and outstanding verification.
 
 ## Bag Cleaner
 

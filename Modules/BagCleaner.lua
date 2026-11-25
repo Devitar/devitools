@@ -1,4 +1,4 @@
-local _, ns = ...
+local addonName, ns = ...
 
 -- Each candidate represents one entire bag slot, ranked by its stack's vendor value.
 local candidates, queue, queueIsBulk = {}, nil, false
@@ -523,6 +523,12 @@ open:SetSize(110, 24)
 open:SetText("Make space")
 open:Hide()
 local anchoredTo, watched = nil, {}
+local function isEnabled()
+    if type(DevitoolsCharacterDB) == "table" and DevitoolsCharacterDB.bagCleanerEnabled ~= nil then
+        return DevitoolsCharacterDB.bagCleanerEnabled ~= false
+    end
+    return type(DevitoolsDB) ~= "table" or DevitoolsDB.bagCleanerEnabled ~= false
+end
 local positionButton
 local function watch(frame)
     if frame and not watched[frame] then
@@ -560,7 +566,7 @@ positionButton = function()
         open:SetFrameLevel(bagFrame:GetFrameLevel() + 10)
         anchoredTo = bagFrame
     end
-    if bagFrame and (type(DevitoolsDB) ~= "table" or DevitoolsDB.bagCleanerEnabled ~= false) then
+    if bagFrame and isEnabled() then
         open:Show()
     else
         open:Hide()
@@ -595,12 +601,12 @@ local enabledText = enabled:CreateFontString(nil, "ARTWORK", "GameFontHighlight"
 enabledText:SetPoint("LEFT", enabled, "RIGHT", 2, 0)
 enabledText:SetText("Enable Bag Cleaner")
 enabled:SetScript("OnClick", function(self)
-    if type(DevitoolsDB) ~= "table" then
-        DevitoolsDB = {}
+    if type(DevitoolsCharacterDB) ~= "table" then
+        DevitoolsCharacterDB = {}
     end
-    DevitoolsDB.bagCleanerEnabled = self:GetChecked() and true or false
+    DevitoolsCharacterDB.bagCleanerEnabled = self:GetChecked() and true or false
     positionButton()
-    if not DevitoolsDB.bagCleanerEnabled then
+    if not DevitoolsCharacterDB.bagCleanerEnabled then
         panel:Hide()
     end
 end)
@@ -740,7 +746,7 @@ end
 add:SetScript("OnClick", addExclusion)
 excludeInput:SetScript("OnEnterPressed", addExclusion)
 local function updateSettings()
-    enabled:SetChecked(type(DevitoolsDB) ~= "table" or DevitoolsDB.bagCleanerEnabled ~= false)
+    enabled:SetChecked(isEnabled())
     poorOnly:SetChecked(cleanerOption("poorOnly") == true)
     sellableOnly:SetChecked(cleanerOption("sellableOnly") == true)
     if not defaultInput:HasFocus() then
@@ -754,9 +760,17 @@ events:RegisterEvent("PLAYER_LOGIN")
 events:RegisterEvent("PLAYER_ENTERING_WORLD")
 events:RegisterEvent("BAG_UPDATE_DELAYED")
 events:RegisterEvent("ADDON_LOADED")
-events:SetScript("OnEvent", function()
+events:SetScript("OnEvent", function(_, event, loaded)
+    if (event == "ADDON_LOADED" and loaded == addonName) or event == "PLAYER_LOGIN" then
+        if type(DevitoolsCharacterDB) ~= "table" then
+            DevitoolsCharacterDB = {}
+        end
+        if DevitoolsCharacterDB.bagCleanerEnabled == nil then
+            DevitoolsCharacterDB.bagCleanerEnabled = type(DevitoolsDB) ~= "table" or DevitoolsDB.bagCleanerEnabled ~= false
+        end
+    end
     positionButton()
-    if type(DevitoolsDB) == "table" and DevitoolsDB.bagCleanerEnabled == false then
+    if not isEnabled() then
         open:Hide()
     end
     updateSettings()

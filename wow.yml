@@ -1,6 +1,10 @@
 base: lua51
 
 globals:
+  GetShapeshiftForm:
+    any: true
+  GetShapeshiftFormInfo:
+    any: true
   C_TooltipInfo.GetBagItem:
     any: true
   ITEM_CONJURED:
